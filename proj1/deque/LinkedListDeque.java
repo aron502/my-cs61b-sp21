@@ -2,7 +2,6 @@ package deque;
 
 import java.util.Iterator;
 
-// tow sentinel node implementation
 public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
     private Node sentinel = new Node(null, null, null);
     private int size;
@@ -27,10 +26,6 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
 
     public int size() {
         return size;
-    }
-
-    public boolean isEmpty() {
-        return size() == 0;
     }
 
 
