@@ -108,7 +108,7 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
         if (this == other) {
             return true;
         }
-        if (!(other instanceof LinkedListDeque)) {
+        if (this.getClass() != other.getClass()) {
             return false;
         }
         LinkedListDeque<T> rhs = (LinkedListDeque<T>) other;
@@ -141,10 +141,6 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
             T item = head.item;
             head = head.next;
             return item;
-        }
-
-        public void remove() {
-
         }
     }
 

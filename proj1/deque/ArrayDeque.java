@@ -1,6 +1,8 @@
 package deque;
 
-public class ArrayDeque<T> implements Deque<T> {
+import java.util.Iterator;
+
+public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
     private static final int INITIAL_OPACITY = 8;
     private T[] a;
     private int size;
@@ -66,6 +68,58 @@ public class ArrayDeque<T> implements Deque<T> {
             return null;
         }
         return a[getIndex(head, index)];
+    }
+
+    public Iterator<T> iterator() {
+        return new ArrayDequeIterator();
+    }
+    private class ArrayDequeIterator implements Iterator<T> {
+        private int index;
+
+        public ArrayDequeIterator() {
+            index = 0;
+        }
+        public boolean hasNext() {
+            return index < size;
+        }
+        public T next() {
+            return get(index++);
+        }
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("[");
+        for (T item : this) {
+            sb.append(item);
+            sb.append(", ");
+        }
+        sb.append("]");
+        return sb.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null) {
+            return false;
+        }
+        if (this == o) {
+            return true;
+        }
+        if (this.getClass() != o.getClass()) {
+            return false;
+        }
+        ArrayDeque<T> rhs = (ArrayDeque<T>) o;
+        if (this.size() != rhs.size()) {
+            return false;
+        }
+        for (int i = 0; i < size; i++) {
+            if (get(i) != rhs.get(i)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private void resize(int opacity) {
