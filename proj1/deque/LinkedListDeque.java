@@ -1,6 +1,7 @@
 package deque;
 
 import java.util.Iterator;
+import java.util.Objects;
 
 public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
     private Node sentinel = new Node(null, null, null);
@@ -10,7 +11,7 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
         T item;
         Node prev;
         Node next;
-        public Node(T item, Node prev, Node next) {
+        Node(T item, Node prev, Node next) {
             this.item = item;
             this.prev = prev;
             this.next = next;
@@ -116,7 +117,7 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
             return false;
         }
         for (int i = 0; i < size(); i++) {
-            if (get(i) != rhs.get(i)) {
+            if (!Objects.equals(get(i), rhs.get(i))) {
                 return false;
             }
         }

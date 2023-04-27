@@ -1,6 +1,7 @@
 package deque;
 
 import java.util.Iterator;
+import java.util.Objects;
 
 public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
     private static final int INITIAL_OPACITY = 8;
@@ -88,18 +89,6 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
     }
 
     @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("[");
-        for (T item : this) {
-            sb.append(item);
-            sb.append(", ");
-        }
-        sb.append("]");
-        return sb.toString();
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (o == null) {
             return false;
@@ -115,7 +104,7 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
             return false;
         }
         for (int i = 0; i < size; i++) {
-            if (get(i) != rhs.get(i)) {
+            if (Objects.equals(get(i), rhs.get(i))) {
                 return false;
             }
         }
