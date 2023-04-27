@@ -76,7 +76,7 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
     private class ArrayDequeIterator implements Iterator<T> {
         private int index;
 
-        public ArrayDequeIterator() {
+        ArrayDequeIterator() {
             index = 0;
         }
         public boolean hasNext() {
@@ -137,14 +137,14 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
     }
 
 
-    private void checkFull(int size) {
-        if (a.length == size) {
+    private void checkFull(int n) {
+        if (a.length == n) {
             resize(2 * size);
         }
     }
 
-    private void checkLessQuarter(int size) {
-        if (size > 4 && size < a.length / 4) {
+    private void checkLessQuarter(int n) {
+        if (n > 4 && n < a.length / 4) {
             resize(a.length / 4);
         }
     }

@@ -14,25 +14,25 @@ public class MaxArrayDeque<T> extends ArrayDeque<T> {
         if (size() == 0) {
             return null;
         }
-        T max_item = get(0);
+        T maxItem = get(0);
         for (T item : this) {
-            if (cp.compare(max_item, item) < 0) {
-                max_item = item;
+            if (cp.compare(maxItem, item) < 0) {
+                maxItem = item;
             }
         }
-        return max_item;
+        return maxItem;
     }
 
     public T max(Comparator<T> c) {
         if (size() == 0) {
             return null;
         }
-        T max_item = get(0);
+        T maxItem = get(0);
         for (T item : this) {
-            if (c.compare(max_item, item) < 0) {
-                max_item = item;
+            if (c.compare(maxItem, item) < 0) {
+                maxItem = item;
             }
         }
-        return max_item;
+        return maxItem;
     }
 }

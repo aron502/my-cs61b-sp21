@@ -6,6 +6,7 @@ import java.lang.reflect.Array;
 
 import static org.junit.Assert.*;
 public class ArrayDequeTest {
+    @Test
     public void addIsEmptySizeTest() {
 
         ArrayDeque<String> ad = new ArrayDeque<>();
