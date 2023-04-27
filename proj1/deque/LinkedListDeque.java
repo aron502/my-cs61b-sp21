@@ -129,13 +129,11 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
 
     private class LinkedListDequeIterator implements Iterator<T> {
         private int index;
-        private int n;
         LinkedListDequeIterator() {
             index = 0;
-            n = size();
         }
         public boolean hasNext() {
-            return index < n;
+            return index < size;
         }
         public T next() {
             return get(index++);

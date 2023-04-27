@@ -20,12 +20,13 @@ public class MaxArrayDequeTest {
 
     @Test
     public void testReverseComparator() {
-        IntReverseComparator cp = new IntReverseComparator();
+        IntComparator cp = new IntComparator();
+        IntReverseComparator rcp = new IntReverseComparator();
         MaxArrayDeque<Integer> mad = new MaxArrayDeque<>(cp);
         for (int i = 0; i < 10; i++) {
             mad.addLast(i);
         }
-        int max = mad.max();
+        int max = mad.max(rcp);
         assertEquals(max, 0);
     }
 
