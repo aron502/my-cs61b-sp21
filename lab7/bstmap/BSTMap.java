@@ -4,15 +4,15 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-public class BSTMap<Key extends Comparable<Key>, Val> implements Map61B<Key, Val> {
+public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
     private BSTNode root;
     private class BSTNode {
-        Key key;
-        Val val;
+        K key;
+        V val;
         int n;
         BSTNode left;
         BSTNode right;
-        BSTNode(Key key, Val val, int n) {
+        BSTNode(K key, V val, int n) {
             this.key = key;
             this.val = val;
             this.n = n;
@@ -23,27 +23,27 @@ public class BSTMap<Key extends Comparable<Key>, Val> implements Map61B<Key, Val
         root = null;
     }
 
-    public boolean containsKey(Key key) {
-        return containsKey(root, key);
+    public boolean containsK(K key) {
+        return containsK(root, key);
     }
-    private boolean containsKey(BSTNode head, Key key) {
+    private boolean containsK(BSTNode head, K key) {
         if (head == null) {
             return false;
         }
         int cmp = key.compareTo(head.key);
         if (cmp < 0) {
-            return containsKey(head.left, key);
+            return containsK(head.left, key);
         } else if (cmp > 0) {
-            return containsKey(head.right, key);
+            return containsK(head.right, key);
         } else {
             return true;
         }
     }
 
-    public Val get(Key key) {
+    public V get(K key) {
         return get(root, key);
     }
-    private Val get(BSTNode head, Key key) {
+    private V get(BSTNode head, K key) {
         if (head == null) {
             return null;
         }
@@ -67,10 +67,10 @@ public class BSTMap<Key extends Comparable<Key>, Val> implements Map61B<Key, Val
         return head.n;
     }
 
-    public void put(Key key, Val val) {
+    public void put(K key, V val) {
         root = put(root, key, val);
     }
-    private BSTNode put(BSTNode head, Key key, Val val) {
+    private BSTNode put(BSTNode head, K key, V val) {
         if (head == null) {
             return new BSTNode(key, val, 1);
         }
@@ -98,12 +98,12 @@ public class BSTMap<Key extends Comparable<Key>, Val> implements Map61B<Key, Val
         printInOrder(head.right);
     }
 
-    public Set<Key> keySet() {
-        HashSet<Key> sets = new HashSet<>();
+    public Set<K> keySet() {
+        HashSet<K> sets = new HashSet<>();
         keySet(sets, root);
         return sets;
     }
-    private void keySet(Set<Key> sets, BSTNode head) {
+    private void keySet(Set<K> sets, BSTNode head) {
         if (head == null) {
             return;
         }
@@ -112,13 +112,13 @@ public class BSTMap<Key extends Comparable<Key>, Val> implements Map61B<Key, Val
         keySet(sets, head.right);
     }
 
-    public Val remove(Key key) {
-        if (!containsKey(key)) {
+    public V remove(K key) {
+        if (!containsK(key)) {
             return null;
         }
         return remove(root, key).val;
     }
-    private BSTNode remove(BSTNode head, Key key) {
+    private BSTNode remove(BSTNode head, K key) {
         if (head == null) {
             return null;
         }
@@ -143,11 +143,11 @@ public class BSTMap<Key extends Comparable<Key>, Val> implements Map61B<Key, Val
         return head;
     }
 
-    public Val remove(Key key, Val val) {
-        if (!containsKey(key)) {
+    public V remove(K key, V val) {
+        if (!containsK(key)) {
             return null;
         }
-        Val value = get(key);
+        V value = get(key);
         if (value != val) {
             return null;
         }
@@ -170,7 +170,7 @@ public class BSTMap<Key extends Comparable<Key>, Val> implements Map61B<Key, Val
         return head;
     }
 
-    public Iterator<Key> iterator() {
+    public Iterator<K> iterator() {
         return keySet().iterator();
     }
 
