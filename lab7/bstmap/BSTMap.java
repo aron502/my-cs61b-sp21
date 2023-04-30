@@ -113,7 +113,7 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
     }
 
     public V remove(K key) {
-        if (!containsK(key)) {
+        if (!containsKey(key)) {
             return null;
         }
         return remove(root, key).val;
@@ -144,7 +144,7 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
     }
 
     public V remove(K key, V val) {
-        if (!containsK(key)) {
+        if (!containsKey(key)) {
             return null;
         }
         V value = get(key);
