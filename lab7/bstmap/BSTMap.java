@@ -23,18 +23,18 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
         root = null;
     }
 
-    public boolean containsK(K key) {
-        return containsK(root, key);
+    public boolean containsKey(K key) {
+        return containsKey(root, key);
     }
-    private boolean containsK(BSTNode head, K key) {
+    private boolean containsKey(BSTNode head, K key) {
         if (head == null) {
             return false;
         }
         int cmp = key.compareTo(head.key);
         if (cmp < 0) {
-            return containsK(head.left, key);
+            return containsKey(head.left, key);
         } else if (cmp > 0) {
-            return containsK(head.right, key);
+            return containsKey(head.right, key);
         } else {
             return true;
         }
