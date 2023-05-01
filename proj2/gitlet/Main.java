@@ -20,7 +20,9 @@ public class Main {
                 Repository.init();
                 break;
             case "add":
-                // TODO: handle the `add [filename]` command
+                Repository.checkRepository();
+                checkArgumentsNum(args, 2);
+                Repository.add(args[1]);
                 break;
             // TODO: FILL THE REST IN
             default:

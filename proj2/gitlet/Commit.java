@@ -40,7 +40,6 @@ public class Commit implements Serializable {
     private HashMap<String, String> blobs;
     private File file;
 
-    /* TODO: fill in the rest of this class. */
     public Commit(String msg, String pID, Date d, HashMap<String, String> map) {
         message = msg;
         parentID = pID;
@@ -54,21 +53,25 @@ public class Commit implements Serializable {
         writeObject(file, this);
     }
 
-    public String id() {
+    public String getId() {
         return id;
     }
 
-    public String message() {
+    public String getParentID() {
+        return parentID;
+    }
+
+    public String getMessage() {
         return message;
+    }
+
+    public String getBlobID(String name) {
+        return blobs.getOrDefault(name, "");
     }
 
     private File getCommitFile(String id) {
         // git folder format.
-        File folder = join(Repository.OBJECTS_DIR, id.substring(0, 2));
-        if (!folder.exists()) {
-            folder.mkdir();
-        }
-        return join(folder, id.substring(2));
+        return join(Repository.COMMITS_DIR, id);
     }
 
 }
