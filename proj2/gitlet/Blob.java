@@ -8,12 +8,10 @@ import static gitlet.Utils.*;
 public class Blob implements Serializable {
     private String id;
     private String fileName;
-    private byte[] content;
     public Blob(String name) {
         fileName = name;
         File file = join(Repository.CWD, name);
-        content = readContents(file);
-        id = sha1(content);
+        id = sha1(readContents(file));
     }
 
     public void saveToFile() {

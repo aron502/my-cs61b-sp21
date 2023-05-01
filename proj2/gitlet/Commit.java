@@ -46,7 +46,7 @@ public class Commit implements Serializable {
         date = sdf.format(d);
         blobs = map;
         id = sha1(message, parentID, date, serialize(blobs));
-        file = getCommitFile(id);
+        file = join(Repository.COMMITS_DIR, id);
     }
 
     public void saveToFile() {
@@ -67,11 +67,6 @@ public class Commit implements Serializable {
 
     public String getBlobID(String name) {
         return blobs.getOrDefault(name, "");
-    }
-
-    private File getCommitFile(String id) {
-        // git folder format.
-        return join(Repository.COMMITS_DIR, id);
     }
 
 }

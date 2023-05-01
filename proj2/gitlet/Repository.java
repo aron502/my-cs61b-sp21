@@ -32,8 +32,9 @@ public class Repository {
     public static final File REFS_DIR = join(GITLET_DIR, "refs");
     /** The branch heads dir. */
     public static final File HEADS_DIR = join(REFS_DIR, "heads");
+    /** The blobs dir. */
     public static final File BLOBS_DIR = join(GITLET_DIR, "blobs");
-    /** The index file. (staging). */
+    /** The index file. (store stage). */
     public static final File INDEX = join(CWD, "index");
     /** The HEAD file. */
     public static final File HEAD = join(CWD, "HEAD");
