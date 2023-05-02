@@ -185,10 +185,9 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
     private void resize(int newSize) {
         Collection<Node>[] newBuckets = createTable(newSize);
         bucketsSize = buckets.length;
-        Arrays.stream(buckets)
-                .filter(Objects::nonNull)
-                .flatMap(Collection::stream)
-                .forEach(node -> newBuckets[getIndex(node.key)].add(node));
+        for (K key : this) {
+            newBuckets[getIndex(key)].add(getNode(key).get());
+        }
         buckets = newBuckets;
     }
 }
