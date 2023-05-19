@@ -145,8 +145,7 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
     }
 
     public V remove(K key) {
-        Optional<Node> nodeOption = getNode(key);
-        return nodeOption.map(node -> {
+        return getNode(key).map(node -> {
             V value = node.value;
             buckets[getIndex(key)].remove(node);
             size -= 1;
@@ -155,8 +154,7 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
     }
 
     public V remove(K key, V value) {
-        Optional<Node> nodeOption = getNode(key);
-        return nodeOption.filter(node -> node.key.equals(key) && node.value.equals(value))
+        return getNode(key).filter(node -> node.key.equals(key) && node.value.equals(value))
                 .map(node -> {
                     buckets[getIndex(key)].remove(node);
                     size -= 1;
