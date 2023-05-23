@@ -120,13 +120,11 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
     }
 
     public V get(K key) {
-        Optional<Node> result = getNode(key);
-        return result.map(node -> node.value).orElse(null);
+        return getNode(key).map(node -> node.value).orElse(null);
     }
 
     public void put(K key, V value) {
-        Optional<Node> nodeOption = getNode(key);
-        nodeOption.ifPresentOrElse(
+        getNode(key).ifPresentOrElse(
                 node -> node.value = value,
                 () -> {
                     buckets[getIndex(key)].add(createNode(key, value));
@@ -168,12 +166,11 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
 
     private Optional<Node> getNode(K key) {
         int index = getIndex(key);
-        Stream<Node> nodeStream = Optional.ofNullable(buckets[index])
+        return Optional.ofNullable(buckets[index])
                 .map(Collection::stream)
-                .orElse(Stream.empty());
-        Optional<Node> result = nodeStream.filter(node -> node.key.equals(key))
+                .orElse(Stream.empty())
+                .filter(node -> node.key.equals(key))
                 .findFirst();
-        return result;
     }
 
     private boolean checkMaxLoad() {
