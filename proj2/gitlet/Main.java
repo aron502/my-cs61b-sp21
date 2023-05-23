@@ -1,7 +1,7 @@
 package gitlet;
 
 /** Driver class for Gitlet, a subset of the Git version-control system.
- *  @author TODO
+ *  @author aron502
  */
 public class Main {
 
@@ -14,20 +14,30 @@ public class Main {
             System.exit(0);
         }
         String firstArg = args[0];
-        switch(firstArg) {
-            case "init":
+        switch (firstArg) {
+            case "init" -> {
                 checkArgumentsNum(args, 1);
                 Repository.init();
-                break;
-            case "add":
+            }
+            case "add" -> {
                 Repository.checkRepository();
                 checkArgumentsNum(args, 2);
                 Repository.add(args[1]);
-                break;
-            // TODO: FILL THE REST IN
-            default:
+            }
+            case "commit" -> {
+                Repository.checkRepository();
+                checkArgumentsNum(args, 2);
+                Repository.commit(args[1]);
+            }
+            case "rm" -> {
+                Repository.checkRepository();
+                checkArgumentsNum(args, 2);
+                Repository.remove(args[1]);
+            }
+            default -> {
                 System.out.println("No command with that name exists.");
                 System.exit(0);
+            }
         }
     }
 

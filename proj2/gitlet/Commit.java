@@ -5,9 +5,8 @@ package gitlet;
 import java.io.File;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
-import java.util.Date; // TODO: You'll likely use this in this class
-import java.util.HashMap;
-import java.util.TimeZone;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static gitlet.Utils.*;
 
@@ -31,25 +30,44 @@ public class Commit implements Serializable {
     static {
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
-    private String message;
+    private final String message;
     // commit id
-    private String id;
-    private String parentID;
-    private String date;
+    private final String id;
+    private List<String> parents;
+    private final String date;
     // store file name and their hash
-    private HashMap<String, String> blobs;
+    private HashMap<String, String> tracked;
     private File file;
 
-    public Commit(String msg, String pID, Date d, HashMap<String, String> map) {
-        message = msg;
-        parentID = pID;
-        date = sdf.format(d);
-        blobs = map;
-        id = sha1(message, parentID, date, serialize(blobs));
+    public Commit() {
+        message = "initial commit.";
+        date = sdf.format(new Date(0));
+        id = sha1(message, date);
         file = join(Repository.COMMITS_DIR, id);
+        parents = new LinkedList<>();
+        tracked = new HashMap<>();
     }
 
-    public void saveToFile() {
+    public Commit(String msg, List<Commit> parents, Stage stage) {
+        message = msg;
+        this.parents = parents.stream()
+                .map(Commit::getId)
+                .collect(Collectors.toCollection(() -> new ArrayList<>(2)));
+        date = sdf.format(new Date());
+        id = sha1(message, parents.toString(), date, tracked.toString());
+        file = join(Repository.COMMITS_DIR, id);
+
+        // store stage changes to tracked.
+        tracked = parents.get(0).getTracked();
+        tracked.putAll(stage.getAdded());
+        stage.getRemoved().forEach(tracked::remove);
+    }
+
+    public static Commit readFromFile(File f) {
+        return readObject(f, Commit.class);
+    }
+
+    public void save() {
         writeObject(file, this);
     }
 
@@ -57,16 +75,20 @@ public class Commit implements Serializable {
         return id;
     }
 
-    public String getParentID() {
-        return parentID;
+    public List<String> getParents() {
+        return parents;
     }
 
     public String getMessage() {
         return message;
     }
 
-    public String getBlobID(String name) {
-        return blobs.getOrDefault(name, "");
+    public HashMap<String, String> getTracked() {
+        return tracked;
+    }
+
+    public String getTrackedID(String name) {
+        return tracked.getOrDefault(name, "");
     }
 
 }
