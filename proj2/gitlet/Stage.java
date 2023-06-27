@@ -3,59 +3,42 @@ package gitlet;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import static gitlet.Utils.*;
 
 public class Stage implements Serializable {
-    private final HashMap<String, String> added;
-    private final HashSet<String> removed;
+    private Map<String, String> added = new HashMap<>();
+    private Set<String> removed = new HashSet<>();
 
     public void save() {
         writeObject(Repository.INDEX, this);
     }
 
+    public void clear() {
+        added = new HashMap<>();
+        removed = new HashSet<>();
+    }
+
     public static Stage readFromFile() {
         return readObject(Repository.INDEX, Stage.class);
     }
-
-    public static void clear(Stage stage) {
-
-    }
-
-    public Stage() {
-       added = new HashMap<>();
-       removed = new HashSet<>();
-    }
-
-    public void addFile(String fileName, String id) {
-        added.put(fileName, id);
-        removed.remove(fileName);
+    public void addFile(String filePath, String id) {
+        added.put(filePath, id);
+        removed.remove(filePath);
     }
 
     public boolean isEmpty() {
         return added.isEmpty() && removed.isEmpty();
     }
 
-    public void removeFile(String fileName) {
-        added.remove(fileName);
-        removed.add(fileName);
-    }
-
-    public void remove(String fileName) {
-        added.remove(fileName);
-        removed.remove(fileName);
-    }
-
-
-    public String getAddedID(String fileName) {
-        return added.getOrDefault(fileName, "");
-    }
-
-    public HashMap<String, String> getAdded() {
+    public Map<String, String> getAdded() {
         return added;
     }
 
-    public HashSet<String> getRemoved() {
+    public Set<String> getRemoved() {
         return removed;
     }
+
 }

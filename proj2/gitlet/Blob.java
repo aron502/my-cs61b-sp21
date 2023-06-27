@@ -7,33 +7,28 @@ import static gitlet.Utils.*;
 
 public class Blob implements Serializable {
     private final String id;
-    private final String fileName;
     private final byte[] content;
-    public Blob(String name) {
-        fileName = name;
-        File file = join(Repository.CWD, name);
-        if (file.exists()) {
-            content = readContents(file);
-            id = sha1(fileName, content);
-        } else {
-            content = null;
-            id = sha1(fileName);
-        }
+    private final File file;
+    public Blob(File f) {
+        content = readContents(f);
+        id = sha1(f.getPath(), content);
+        file = getObjectFile(id);
     }
 
-    public byte[] getContent() {
-        return content;
+    public static Blob readFromFile(String id) {
+        return readObject(getObjectFile(id), Blob.class);
     }
 
     public void save() {
-        writeObject(join(Repository.BLOBS_DIR, id), this);
+        saveObject(file, this);
+    }
+
+    public boolean exists() {
+        return content != null;
     }
 
     public String getId() {
         return id;
     }
 
-    public String getFileName() {
-        return fileName;
-    }
 }

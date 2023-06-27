@@ -2,3 +2,4 @@
 .*
 !/.gitignore
 */target/**
+library-sp21/

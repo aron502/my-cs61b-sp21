@@ -14,81 +14,70 @@ import static gitlet.Utils.*;
  *  TODO: It's a good idea to give a description here of what else this Class
  *  does at a high level.
  *
- *  @author TODO
+ *  @author aron502
  */
 public class Commit implements Serializable {
-    /**
-     * TODO: add instance variables here.
-     *
+    /*
      * List all instance variables of the Commit class here with a useful
      * comment above them describing what that variable represents and how that
      * variable is used. We've provided one example for `message`.
      */
 
     /** The message of this Commit. */
-    private static final SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss 'UTC', EEEE, d MMMM yyyy");
-    static {
-        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-    }
     private final String message;
     // commit id
     private final String id;
-    private List<String> parents;
-    private final String date;
-    // store file name and their hash
-    private HashMap<String, String> tracked;
-    private File file;
+    private final Date date;
+    // store filePath and blob's id
+    private final List<String> parents;
+    private final Map<String, String> tracked;
+    // commit blob file
+    private final File file;
+    private final SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss 'UTC', EEEE, d MMMM yyyy", Locale.ENGLISH);
+
 
     public Commit() {
         message = "initial commit.";
-        date = sdf.format(new Date(0));
-        id = sha1(message, date);
-        file = join(Repository.COMMITS_DIR, id);
+        date = new Date(0);
         parents = new LinkedList<>();
         tracked = new HashMap<>();
+        id = generateID();
+        file = getObjectFile(id);
     }
 
     public Commit(String msg, List<Commit> parents, Stage stage) {
         message = msg;
-        this.parents = parents.stream()
-                .map(Commit::getId)
-                .collect(Collectors.toCollection(() -> new ArrayList<>(2)));
-        date = sdf.format(new Date());
-        id = sha1(message, parents.toString(), date, tracked.toString());
-        file = join(Repository.COMMITS_DIR, id);
-
-        // store stage changes to tracked.
+        date = new Date();
+        this.parents = new ArrayList<>(2);
+        parents.forEach(p -> this.parents.add(p.getId()));
         tracked = parents.get(0).getTracked();
         tracked.putAll(stage.getAdded());
         stage.getRemoved().forEach(tracked::remove);
+        id = generateID();
+        file = getObjectFile(id);
     }
 
-    public static Commit readFromFile(File f) {
-        return readObject(f, Commit.class);
+    public static Commit readFromFile(String id) {
+        return readObject(getObjectFile(id), Commit.class);
     }
 
     public void save() {
-        writeObject(file, this);
+        saveObject(file, this);
     }
 
     public String getId() {
         return id;
     }
 
-    public List<String> getParents() {
-        return parents;
+    public String getTimeStamp() {
+        return sdf.format(date);
     }
 
-    public String getMessage() {
-        return message;
-    }
-
-    public HashMap<String, String> getTracked() {
+    public Map<String, String> getTracked() {
         return tracked;
     }
 
-    public String getTrackedID(String name) {
-        return tracked.getOrDefault(name, "");
+    private String generateID() {
+        return sha1(date.toString(), message, parents.toString(), tracked.toString());
     }
-
 }

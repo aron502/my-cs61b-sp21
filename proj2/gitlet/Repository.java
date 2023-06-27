@@ -1,8 +1,8 @@
 package gitlet;
 
 import java.io.File;
-import java.util.Date;
-import java.util.*;
+import java.util.List;
+
 import static gitlet.Utils.*;
 
 
@@ -19,72 +19,58 @@ public class Repository {
      * variable is used. We've provided two examples for you.
      */
 
+    /** Default branch name. */
+    public static final String DEFAULT_BRANCH = "master";
     /** The current working directory. */
     public static final File CWD = new File(System.getProperty("user.dir"));
     /** The .gitlet directory. */
     public static final File GITLET_DIR = join(CWD, ".gitlet");
-    /** The commits directory. */
-    public static final File COMMITS_DIR = join(GITLET_DIR, "commits");
-    /** The staging directory. */
-    public static final File STAGING = join(GITLET_DIR, "staging");
     /** The refs dir. */
     public static final File REFS_DIR = join(GITLET_DIR, "refs");
     /** The branch heads dir. */
     public static final File HEADS_DIR = join(REFS_DIR, "heads");
     /** The blobs dir. */
-    public static final File BLOBS_DIR = join(GITLET_DIR, "blobs");
+    public static final File OBJECTS_DIR = join(GITLET_DIR, "objects");
     /** The index file. (store stage). */
-    public static final File INDEX = join(CWD, "index");
+    public static final File INDEX = join(GITLET_DIR, "index");
     /** The HEAD file. */
-    public static final File HEAD = join(CWD, "HEAD");
-
-//    ├── *blobs*
-//    ├── *commits*
-//    ├── HEAD
-//    ├── index
-//    ├── *refs*
-//    │ └── *heads*
-//    └── *staging*
-
-    /** Default branch name. */
-    public static final String DEFAULT_BRANCH = "master";
+    public static final File HEAD = join(GITLET_DIR, "HEAD");
 
     public static void init() {
         if (GITLET_DIR.exists()) {
             System.out.println("A Gitlet version-control system already exists in the current directory.");
             System.exit(0);
         }
-        mkdir();
-        mkfile(); // create INDEX
-        String commitID = initialCommit();
+        mkdir(GITLET_DIR);
+        mkdir(REFS_DIR);
+        mkdir(HEADS_DIR);
+        mkdir(OBJECTS_DIR);
+        mkstage();
+        String id = initialCommit();
         writeHEAD(DEFAULT_BRANCH);
-        writeHeadsBranch(DEFAULT_BRANCH, commitID);
+        writeHeadBranch(DEFAULT_BRANCH, id);
     }
 
     /** gitlet add file. */
     public static void add(String fileName) {
-        File f = getCWDFile(fileName);
-        checkFileExists(f);
-        Commit head = getHeadCommit();
-        String trackedID = head.getTrackedID(fileName);
+        File file = join(CWD, fileName);
 
-        Blob blob = new Blob(fileName);
-        String blobID = blob.getId();
+        var blob = new Blob(file);
+        var stage = Stage.readFromFile();
+        var id = new TripleId(blob, stage, fileName);
 
-        Stage stage = Stage.readFromFile();
-        String stageAddedID = stage.getAddedID(fileName);
-        // head commits file same as blob
-        if (trackedID.equals(blobID)) {
-            // no need to add
-            // if stage already has file, remove it
-            removeStagingFile(stageAddedID);
-            stage.remove(stageAddedID);
-        } else if (!blobID.equals(stageAddedID)) {
-            if (!stageAddedID.equals("")) {
-                removeStagingFile(stageAddedID);
+        if (id.trackId.equals(id.blobId)) {
+            if (!id.stageId.isEmpty()) {
+                restrictedDelete(getObjectFile(id.stageId));
+                stage.getAdded().remove(fileName);
+                stage.getRemoved().remove(fileName);
+            }
+        } else if (!id.blobId.equals(id.stageId)) {
+            if (!id.stageId.isEmpty()) {
+                restrictedDelete(getObjectFile(id.stageId));
             }
             blob.save();
-            stage.addFile(fileName, blobID);
+            stage.addFile(fileName, id.blobId);
         }
         stage.save();
     }
@@ -92,20 +78,34 @@ public class Repository {
     /** gitlet commit */
     public static void commit(String msg) {
         checkMsgEmpty(msg);
-        Stage stage = Stage.readFromFile();
-        checkStageEmtpy(stage);
-        Commit oldHead = getHeadCommit();
-        Commit newHead = new Commit(msg, List.of(oldHead), stage);
-        Stage.clear(stage);
-        newHead.save();
-        String commitID = newHead.getId();
-        String branchName = getCurrentBranch();
-        writeHeadsBranch(branchName, commitID);
+        var stage = Stage.readFromFile();
+        var newCommit = new Commit(msg, List.of(getHeadCommit()), stage);
+        newCommit.save();
+        String id = newCommit.getId();
+        writeHeadBranch(getCurrentBranch(), id);
+        stage.clear();
     }
 
     /** gitlet rm */
     public static void remove(String fileName) {
+        File file = join(CWD, fileName);
 
+        var blob = new Blob(file);
+        var stage = Stage.readFromFile();
+        var id = new TripleId(blob, stage, fileName);
+
+        checkStageIdAndHeadId(id.stageId, id.trackId);
+        if (!id.stageId.isEmpty()) {
+            stage.getAdded().remove(fileName);
+        } else {
+            // stageId is empty, headId not empty
+            stage.getRemoved().add(fileName);
+        }
+
+        if (blob.exists() && id.blobId.equals(id.trackId)) {
+            restrictedDelete(getObjectFile(id.blobId));
+        }
+        stage.save();
     }
 
     public static void checkRepository() {
@@ -115,63 +115,41 @@ public class Repository {
         }
     }
 
-    private static Date now() {
-        return new Date();
-    }
-
-    private static void mkdir() {
-        GITLET_DIR.mkdir();
-        COMMITS_DIR.mkdir();
-        REFS_DIR.mkdir();
-        HEADS_DIR.mkdir();
-        STAGING.mkdir();
-        BLOBS_DIR.mkdir();
-    }
-
-    private static void mkfile() {
-        Stage stage = new Stage();
-        writeObject(INDEX, stage);
-    }
-
     private static String initialCommit() {
         Commit initial = new Commit();
         initial.save();
         return initial.getId();
     }
 
-    private static void writeHEAD(String name) {
-        writeContents(HEAD, name);
-    }
-
-    private static void writeHeadsBranch(String name, String id) {
-        File f = getBranchFile(name);
-        writeContents(f, id);
-    }
-
-    private static File getBranchFile(String name) {
-        return join(HEADS_DIR, name);
-    }
-
-    private static File getCWDFile(String name) {
-        return join(CWD, name);
+    private static Commit getHeadCommit() {
+        String branch = getCurrentBranch();
+        String id = readContentsAsString(join(HEADS_DIR, branch));
+        return readObject(getObjectFile(id), Commit.class);
     }
 
     private static String getCurrentBranch() {
         return readContentsAsString(HEAD);
     }
 
-    private static Commit getHeadCommit() {
-        String name = getCurrentBranch();
-        File f = getBranchFile(name);
-        return Commit.readFromFile(f);
+    private static void writeHEAD(String branchName) {
+        writeContents(HEAD, branchName);
     }
 
-    private static void removeStagingFile(String name) {
-        join(STAGING, name).delete();
+    private static void writeHeadBranch(String branchName, String id) {
+        File f = join(HEADS_DIR, branchName);
+        writeContents(f, id);
     }
 
-    private static void removeHEAD() {
-        HEAD.delete();
+    private static void mkstage() {
+        Stage staging = new Stage();
+        staging.save();
+    }
+
+    private static void checkStageIdAndHeadId(String stageId, String headId) {
+        if (stageId.isEmpty() && headId.isEmpty()) {
+            System.out.println("No reason to remove the file.");
+            System.exit(0);
+        }
     }
 
     private static void checkMsgEmpty(String msg) {
@@ -181,7 +159,7 @@ public class Repository {
         }
     }
 
-    private static void checkStageEmtpy(Stage stage) {
+    private static void checkStageEmpty(Stage stage) {
         if (stage.isEmpty()) {
             System.out.println("No changes added to the commit.");
             System.exit(0);
@@ -189,7 +167,23 @@ public class Repository {
     }
 
     private static void checkFileExists(File f) {
-        System.out.println("File does not exist.");
-        System.exit(0);
+        if (!f.exists()) {
+            System.out.println("File does not exist.");
+            System.exit(0);
+        }
+    }
+
+    private static class TripleId {
+        final String trackId;
+        final String blobId;
+        final String stageId;
+
+        TripleId(Blob blob, Stage stage, String fileName) {
+            trackId = getHeadCommit()
+                    .getTracked()
+                    .getOrDefault(fileName, "");
+            blobId = blob.getId();
+            stageId = stage.getAdded().getOrDefault(fileName, "");
+        }
     }
 }
