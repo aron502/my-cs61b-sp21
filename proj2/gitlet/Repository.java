@@ -54,6 +54,7 @@ public class Repository {
     /** gitlet add file. */
     public static void add(String fileName) {
         File file = join(CWD, fileName);
+        checkFileExists(file);
 
         var blob = new Blob(file);
         var stage = Stage.readFromFile();
@@ -79,6 +80,7 @@ public class Repository {
     public static void commit(String msg) {
         checkMsgEmpty(msg);
         var stage = Stage.readFromFile();
+        checkStageEmpty(stage);
         var newCommit = new Commit(msg, List.of(getHeadCommit()), stage);
         newCommit.save();
         String id = newCommit.getId();
@@ -106,6 +108,21 @@ public class Repository {
             restrictedDelete(getObjectFile(id.blobId));
         }
         stage.save();
+    }
+
+    public static void log() {
+        var sb = new StringBuilder();
+        var head = getHeadCommit();
+        while (head != null) {
+            sb.append(head);
+            head = Commit.readFromFile(head.getParents().get(0));
+        }
+        System.out.print(sb);
+    }
+
+    public static void globalLog() {
+        var commit = getHeadCommit();
+        printAllCommit(commit);
     }
 
     public static void checkRepository() {
@@ -170,6 +187,21 @@ public class Repository {
         if (!f.exists()) {
             System.out.println("File does not exist.");
             System.exit(0);
+        }
+    }
+
+    private static void printAllCommit(Commit cmt) {
+        if (cmt == null) {
+            return;
+        }
+        System.out.print(cmt);
+        String first = cmt.getParents().get(0);
+        String second = cmt.getParents().get(1);
+        if (first != null) {
+            printAllCommit(Commit.readFromFile(first));
+        }
+        if (second != null) {
+            printAllCommit(Commit.readFromFile(second));
         }
     }
 

@@ -34,6 +34,16 @@ public class Main {
                 checkArgumentsNum(args, 2);
                 Repository.remove(args[1]);
             }
+            case "log" -> {
+                Repository.checkRepository();
+                checkArgumentsNum(args, 1);
+                Repository.log();
+            }
+            case "global-log" -> {
+                Repository.checkRepository();
+                checkArgumentsNum(args, 1);
+                Repository.globalLog();
+            }
             default -> {
                 System.out.println("No command with that name exists.");
                 System.exit(0);

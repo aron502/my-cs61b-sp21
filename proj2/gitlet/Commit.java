@@ -33,11 +33,12 @@ public class Commit implements Serializable {
     private final Map<String, String> tracked;
     // commit blob file
     private final File file;
-    private final SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss 'UTC', EEEE, d MMMM yyyy", Locale.ENGLISH);
+    private final SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss, EEEE, d MMMM yyyy", Locale.ENGLISH);
+    public static final String INITIAL_MSG = "initial commit.";
 
 
     public Commit() {
-        message = "initial commit.";
+        message = INITIAL_MSG;
         date = new Date(0);
         parents = new LinkedList<>();
         tracked = new HashMap<>();
@@ -73,8 +74,25 @@ public class Commit implements Serializable {
         return sdf.format(date);
     }
 
+    public List<String> getParents() {
+        return parents;
+    }
+
     public Map<String, String> getTracked() {
         return tracked;
+    }
+
+    @Override
+    public String toString() {
+        var sb = new StringBuilder();
+        sb.append("===\n");
+        sb.append("commit %s\n".formatted(id));
+        if (parents.size() == 2) {
+            sb.append("Merge: %s %s\n".formatted(parents.get(0).substring(0, 7), parents.get(1).substring(0, 7)));
+        }
+        sb.append("Date: %s\n".formatted(getTimeStamp()));
+        sb.append("%s\n".formatted(message));
+        return sb.toString();
     }
 
     private String generateID() {
