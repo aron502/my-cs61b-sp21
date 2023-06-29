@@ -58,6 +58,11 @@ public class Main {
                 Repository.checkRepository();
                 Repository.checkout(args);
             }
+            case "branch" -> {
+                Repository.checkRepository();
+                checkArgumentsNum(args, 2);
+                Repository.branch(args[1]);
+            }
             default -> {
                 System.out.println("No command with that name exists.");
                 System.exit(0);

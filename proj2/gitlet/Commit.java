@@ -89,7 +89,7 @@ public class Commit implements Serializable {
     }
 
     public String getSecondParent() {
-        if (parents.isEmpty()) {
+        if (parents.size() < 2) {
             return null;
         }
         return parents.get(1);
@@ -99,16 +99,25 @@ public class Commit implements Serializable {
         return message;
     }
 
+    public String getTrackedId(String fileName) {
+        String id = tracked.get(fileName);
+        if (id == null) {
+            System.out.println("File does not exist in that commit.");
+            System.exit(0);
+        }
+        return id;
+    }
+
     @Override
     public String toString() {
         var sb = new StringBuilder();
-        sb.append("===\n");
-        sb.append("commit %s\n".formatted(id));
+        sb.append("===\n")
+          .append("commit %s\n".formatted(id));
         if (parents.size() == 2) {
             sb.append("Merge: %s %s\n".formatted(parents.get(0).substring(0, 7), parents.get(1).substring(0, 7)));
         }
-        sb.append("Date: %s\n".formatted(getTimeStamp()));
-        sb.append("%s\n".formatted(message));
+        sb.append("Date: %s\n".formatted(getTimeStamp()))
+          .append("%s\n".formatted(message));
         return sb.toString();
     }
 

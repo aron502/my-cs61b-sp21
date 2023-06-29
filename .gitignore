@@ -6,3 +6,4 @@ library-sp21/
 *.class
 /.gitlet
 test.txt
+test.sh

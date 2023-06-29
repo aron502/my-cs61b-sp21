@@ -16,9 +16,10 @@ public class Stage implements Serializable {
         writeObject(Repository.INDEX, this);
     }
 
-    public void clear() {
+    public Stage clear() {
         added = new HashMap<>();
         removed = new HashSet<>();
+        return this;
     }
 
     public static Stage readFromFile() {

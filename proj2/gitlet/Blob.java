@@ -31,4 +31,8 @@ public class Blob implements Serializable {
         return id;
     }
 
+    public byte[] getContent() {
+        return content;
+    }
+
 }

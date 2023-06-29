@@ -57,13 +57,14 @@ class Utils {
         }
     }
 
-    public static File getObjectFile(String id) {
+    /* my util function */
+    static File getObjectFile(String id) {
         String dir = id.substring(0, 2);
         String fileName = id.substring(2);
         return join(Repository.OBJECTS_DIR, dir, fileName);
     }
 
-    public static void saveObject(File f, Serializable obj) {
+    static void saveObject(File f, Serializable obj) {
         var dir = f.getParentFile();
         if (!dir.exists()) {
             mkdir(dir);
@@ -71,12 +72,20 @@ class Utils {
         writeObject(f, obj);
     }
 
-    public static void mkdir(File f) {
+    static void mkdir(File f) {
         if (!f.mkdir()) {
             System.out.println("Failed to mkdir.");
             System.exit(0);
         }
     }
+
+    static void rm(File f) {
+        if (!restrictedDelete(f)) {
+            System.out.println("Failed to delete: " + f.getName());
+            System.exit(0);
+        }
+    }
+    /* my util function end */
 
     /** Returns the SHA-1 hash of the concatenation of the strings in
      *  VALS. */

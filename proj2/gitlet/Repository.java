@@ -1,7 +1,9 @@
 package gitlet;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -64,13 +66,13 @@ public class Repository {
 
         if (id.trackId.equals(id.blobId)) {
             if (!id.stageId.isEmpty()) {
-                restrictedDelete(getObjectFile(id.stageId));
+                rm(getObjectFile(id.stageId));
                 stage.getAdded().remove(fileName);
                 stage.getRemoved().remove(fileName);
             }
         } else if (!id.blobId.equals(id.stageId)) {
             if (!id.stageId.isEmpty()) {
-                restrictedDelete(getObjectFile(id.stageId));
+                rm(getObjectFile(id.stageId));
             }
             blob.save();
             stage.addFile(fileName, id.blobId);
@@ -87,8 +89,8 @@ public class Repository {
         newCommit.save();
         String id = newCommit.getId();
         writeHeadBranch(getCurrentBranch(), id);
-        stage.clear();
-        stage.save();
+        stage.clear()
+             .save();
     }
 
     /** gitlet rm */
@@ -108,7 +110,7 @@ public class Repository {
         }
 
         if (blob.exists() && id.blobId.equals(id.trackId)) {
-            restrictedDelete(getObjectFile(id.blobId));
+            rm(getObjectFile(id.blobId));
         }
         stage.save();
     }
@@ -159,7 +161,7 @@ public class Repository {
         } else if (args.length == 3) {
             checkoutFile(args[2]);
         } else if (args.length == 4) {
-            checkoutIdFile(args[1], args[3]);
+            checkoutIdAndFile(args[1], args[3]);
         } else {
             System.out.println("Incorrect operands.");
             System.exit(0);
@@ -167,14 +169,50 @@ public class Repository {
     }
 
     private static void checkoutBranch(String branchName) {
+        checkBranchExists(branchName);
+        checkIfCurrentBranch(branchName);
+        var stage = Stage.readFromFile();
+        var tracked = Commit.readFromFile(readContentsAsString(join(HEADS_DIR, branchName)))
+                                                  .getTracked();
+        checkUnTrackedFile(tracked);
+        stage.clear()
+             .save();
+        clearCWD();
+        addFilesToCWD(tracked);
+        writeHEAD(branchName);
+    }
 
+    private static void addFilesToCWD(Map<String, String> tracked) {
+        for (var entry : tracked.entrySet()) {
+            writeContents(
+              join(CWD, entry.getKey()),
+              Blob.readFromFile(entry.getValue()).getContent()
+            );
+        }
     }
 
     private static void checkoutFile(String fileName) {
-
+        String fileId = getHeadCommit().getTrackedId(fileName);
+        writeContents(
+          join(CWD, fileName),
+          Blob.readFromFile(fileId).getContent()
+        );
     }
 
-    private static void checkoutIdFile(String id, String fileName) {
+    private static void checkoutIdAndFile(String id, String fileName) {
+        var commit = Commit.readFromFile(id);
+        if (commit == null) {
+            System.out.println("No commit with that id exists.");
+            System.exit(0);
+        }
+        writeContents(
+          join(CWD, fileName),
+          Blob.readFromFile(commit.getTrackedId((fileName)))
+                   .getContent()
+        );
+    }
+
+    public static void branch(String branchName) {
 
     }
 
@@ -264,6 +302,41 @@ public class Repository {
 
         processCommit(Commit.readFromFile(cmt.getFirstParent()), action);
         processCommit(Commit.readFromFile(cmt.getSecondParent()), action);
+    }
+
+    private static void checkUnTrackedFile(Map<String, String> trakced) {
+        for (String fileName : plainFilenamesIn(CWD)) {
+            if (!trakced.containsKey(fileName)) {
+                System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+                System.exit(0);
+            }
+        }
+    }
+
+    private static void checkBranchExists(String branchName) {
+        if (!join(HEADS_DIR, branchName).exists()) {
+            System.out.println("No such branch exists.");
+            System.exit(0);
+        }
+    }
+
+    private static void checkIfCurrentBranch(String branchName) {
+        if (readContentsAsString(HEAD).equals(branchName)) {
+            System.out.println("No need to checkout the current branch.");
+            System.exit(0);
+        }
+    }
+
+    private static void clearCWD() {
+        var files = CWD.listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                return !name.equals(".gitlet");
+            }
+        });
+        for (var file : files) {
+            rm(file);
+        }
     }
 
     private static class TripleId {
