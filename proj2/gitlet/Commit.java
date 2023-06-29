@@ -59,6 +59,9 @@ public class Commit implements Serializable {
     }
 
     public static Commit readFromFile(String id) {
+        if (id == null) {
+            return null;
+        }
         return readObject(getObjectFile(id), Commit.class);
     }
 
@@ -74,12 +77,26 @@ public class Commit implements Serializable {
         return sdf.format(date);
     }
 
-    public List<String> getParents() {
-        return parents;
-    }
-
     public Map<String, String> getTracked() {
         return tracked;
+    }
+
+    public String getFirstParent() {
+        if (parents.isEmpty()) {
+            return null;
+        }
+        return parents.get(0);
+    }
+
+    public String getSecondParent() {
+        if (parents.isEmpty()) {
+            return null;
+        }
+        return parents.get(1);
+    }
+
+    public String getMessage() {
+        return message;
     }
 
     @Override

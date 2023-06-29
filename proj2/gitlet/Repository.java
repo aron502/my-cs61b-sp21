@@ -2,6 +2,8 @@ package gitlet;
 
 import java.io.File;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static gitlet.Utils.*;
 
@@ -86,6 +88,7 @@ public class Repository {
         String id = newCommit.getId();
         writeHeadBranch(getCurrentBranch(), id);
         stage.clear();
+        stage.save();
     }
 
     /** gitlet rm */
@@ -115,14 +118,64 @@ public class Repository {
         var head = getHeadCommit();
         while (head != null) {
             sb.append(head);
-            head = Commit.readFromFile(head.getParents().get(0));
+            head = Commit.readFromFile(head.getFirstParent());
         }
         System.out.print(sb);
     }
 
     public static void globalLog() {
-        var commit = getHeadCommit();
-        printAllCommit(commit);
+        printAllCommit(getHeadCommit());
+    }
+
+    public static void find(String msg) {
+        printAllId(getHeadCommit(), msg);
+    }
+
+    public static void status() {
+        var sb = new StringBuilder();
+        String headName = readContentsAsString(HEAD);
+
+        String branchNames = plainFilenamesIn(HEADS_DIR).stream()
+          .map(name -> name.equals(headName) ? "*" + name : name)
+          .collect(Collectors.joining("\n"));
+
+        var stage = Stage.readFromFile();
+        String addedNames = String.join("\n", stage.getAdded().keySet());
+        String removedNames = String.join("\n", stage.getRemoved());
+
+        sb.append("=== Branches ===\n")
+          .append(branchNames)
+          .append("\n\n=== Staged Files ===\n")
+          .append(addedNames)
+          .append("\n\n=== Removed Files ===\n")
+          .append(removedNames);
+
+        System.out.println(sb);
+    }
+
+    public static void checkout(String[] args) {
+        if (args.length == 2) {
+            checkoutBranch(args[1]);
+        } else if (args.length == 3) {
+            checkoutFile(args[2]);
+        } else if (args.length == 4) {
+            checkoutIdFile(args[1], args[3]);
+        } else {
+            System.out.println("Incorrect operands.");
+            System.exit(0);
+        }
+    }
+
+    private static void checkoutBranch(String branchName) {
+
+    }
+
+    private static void checkoutFile(String fileName) {
+
+    }
+
+    private static void checkoutIdFile(String id, String fileName) {
+
     }
 
     public static void checkRepository() {
@@ -191,18 +244,26 @@ public class Repository {
     }
 
     private static void printAllCommit(Commit cmt) {
+        processCommit(cmt, System.out::print);
+    }
+
+    private static void printAllId(Commit cmt, String msg) {
+        processCommit(cmt, commit -> {
+            if (commit.getMessage().equals(msg)) {
+                System.out.println(commit.getId());
+            }
+        });
+    }
+
+    private static void processCommit(Commit cmt, Consumer<Commit> action) {
         if (cmt == null) {
             return;
         }
-        System.out.print(cmt);
-        String first = cmt.getParents().get(0);
-        String second = cmt.getParents().get(1);
-        if (first != null) {
-            printAllCommit(Commit.readFromFile(first));
-        }
-        if (second != null) {
-            printAllCommit(Commit.readFromFile(second));
-        }
+
+        action.accept(cmt);
+
+        processCommit(Commit.readFromFile(cmt.getFirstParent()), action);
+        processCommit(Commit.readFromFile(cmt.getSecondParent()), action);
     }
 
     private static class TripleId {

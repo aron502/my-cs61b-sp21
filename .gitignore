@@ -3,3 +3,6 @@
 !/.gitignore
 */target/**
 library-sp21/
+*.class
+/.gitlet
+test.txt
