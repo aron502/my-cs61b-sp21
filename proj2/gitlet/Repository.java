@@ -119,7 +119,7 @@ public class Repository {
         var sb = new StringBuilder();
         var head = getHeadCommit();
         while (head != null) {
-            sb.append(head);
+            sb.append("%s\n".formatted(head));
             head = Commit.readFromFile(head.getFirstParent());
         }
         System.out.print(sb);
