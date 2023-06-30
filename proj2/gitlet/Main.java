@@ -73,6 +73,11 @@ public class Main {
                 checkArgumentsNum(args, 2);
                 Repository.reset(args[1]);
             }
+            case "merge" -> {
+                Repository.checkRepository();
+                checkArgumentsNum(args, 2);
+                Repository.merge(args[1]);
+            }
             default -> {
                 System.out.println("No command with that name exists.");
                 System.exit(0);

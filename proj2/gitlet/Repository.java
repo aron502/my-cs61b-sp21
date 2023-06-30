@@ -203,7 +203,7 @@ public class Repository {
     public static void branch(String branchName) {
         File file = join(HEADS_DIR, branchName);
         checkBranchFile(file);
-        writeContents(file, readContentsAsString(HEAD));
+        writeContents(file, getHeadCommit().getId());
     }
 
     public static void rmBranch(String branchName) {
@@ -225,6 +225,9 @@ public class Repository {
         writeHeadBranch(readContentsAsString(HEAD), commit.getId());
     }
 
+    public static void merge(String branchName) {
+        
+    }
 
     private static void checkIfBranchCanRemove(File file) {
         if (!file.exists()) {
