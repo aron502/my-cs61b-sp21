@@ -33,8 +33,8 @@ public class Commit implements Serializable {
     private final Map<String, String> tracked;
     // commit blob file
     private final File file;
-    private final SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss, EEEE, d MMMM yyyy", Locale.ENGLISH);
-    public static final String INITIAL_MSG = "initial commit.";
+    private final SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy Z", Locale.ENGLISH);
+    public static final String INITIAL_MSG = "initial commit";
 
 
     public Commit() {
@@ -110,15 +110,13 @@ public class Commit implements Serializable {
 
     @Override
     public String toString() {
-        var sb = new StringBuilder();
-        sb.append("===\n")
-          .append("commit %s\n".formatted(id));
-        if (parents.size() == 2) {
-            sb.append("Merge: %s %s\n".formatted(parents.get(0).substring(0, 7), parents.get(1).substring(0, 7)));
-        }
-        sb.append("Date: %s\n".formatted(getTimeStamp()))
-          .append("%s\n".formatted(message));
-        return sb.toString();
+        return "===\n" +
+               "commit %s\n".formatted(id) +
+               (parents.size() == 2
+                 ? "Merge: %s %s\n".formatted(parents.get(0).substring(0, 7), parents.get(1).substring(0, 7))
+                 : "") +
+               "Date: %s\n".formatted(getTimeStamp()) +
+               "%s\n".formatted(message);
     }
 
     private String generateID() {

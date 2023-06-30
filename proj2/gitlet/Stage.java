@@ -42,4 +42,12 @@ public class Stage implements Serializable {
         return removed;
     }
 
+    /**
+     * Delete fileName from staging area.
+     */
+    public void delete(String fileName) {
+        added.remove(fileName);
+        removed.remove(fileName);
+    }
+
 }

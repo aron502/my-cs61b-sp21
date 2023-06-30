@@ -67,8 +67,7 @@ public class Repository {
         if (id.trackId.equals(id.blobId)) {
             if (!id.stageId.isEmpty()) {
                 rm(getObjectFile(id.stageId));
-                stage.getAdded().remove(fileName);
-                stage.getRemoved().remove(fileName);
+                stage.delete(fileName);
             }
         } else if (!id.blobId.equals(id.stageId)) {
             if (!id.stageId.isEmpty()) {
@@ -169,26 +168,15 @@ public class Repository {
     }
 
     private static void checkoutBranch(String branchName) {
-        checkBranchExists(branchName);
+        checkIfBranchExists(branchName);
         checkIfCurrentBranch(branchName);
-        var stage = Stage.readFromFile();
         var tracked = Commit.readFromFile(readContentsAsString(join(HEADS_DIR, branchName)))
                                                   .getTracked();
         checkUnTrackedFile(tracked);
-        stage.clear()
-             .save();
+        Stage.readFromFile().clear().save();
         clearCWD();
         addFilesToCWD(tracked);
         writeHEAD(branchName);
-    }
-
-    private static void addFilesToCWD(Map<String, String> tracked) {
-        for (var entry : tracked.entrySet()) {
-            writeContents(
-              join(CWD, entry.getKey()),
-              Blob.readFromFile(entry.getValue()).getContent()
-            );
-        }
     }
 
     private static void checkoutFile(String fileName) {
@@ -213,7 +201,47 @@ public class Repository {
     }
 
     public static void branch(String branchName) {
+        File file = join(HEADS_DIR, branchName);
+        checkBranchFile(file);
+        writeContents(file, readContentsAsString(HEAD));
+    }
 
+    public static void rmBranch(String branchName) {
+        File file = join(HEADS_DIR, branchName);
+        checkIfBranchCanRemove(file);
+        rm(file);
+    }
+
+    public static void reset(String commitId) {
+        if (!getObjectFile(commitId).exists()) {
+            System.out.println("No commit with that id exists.");
+            System.exit(0);
+        }
+        var commit = Commit.readFromFile(commitId);
+
+        clearCWD();
+        addFilesToCWD(commit.getTracked());
+        Stage.readFromFile().clear().save();
+        writeHeadBranch(readContentsAsString(HEAD), commit.getId());
+    }
+
+
+    private static void checkIfBranchCanRemove(File file) {
+        if (!file.exists()) {
+            System.out.println("A branch with that name does not exist.");
+            System.exit(0);
+        }
+        if (readContentsAsString(HEAD).equals(file.getName())) {
+            System.out.println("Cannot remove the current branch.");
+            System.exit(0);
+        }
+    }
+
+    private static void checkBranchFile(File file) {
+        if (file.exists()) {
+            System.out.println("A branch with that name already exists.");
+            System.exit(0);
+        }
     }
 
     public static void checkRepository() {
@@ -282,7 +310,7 @@ public class Repository {
     }
 
     private static void printAllCommit(Commit cmt) {
-        processCommit(cmt, System.out::print);
+        processCommit(cmt, System.out::println);
     }
 
     private static void printAllId(Commit cmt, String msg) {
@@ -313,7 +341,7 @@ public class Repository {
         }
     }
 
-    private static void checkBranchExists(String branchName) {
+    private static void checkIfBranchExists(String branchName) {
         if (!join(HEADS_DIR, branchName).exists()) {
             System.out.println("No such branch exists.");
             System.exit(0);
@@ -336,6 +364,15 @@ public class Repository {
         });
         for (var file : files) {
             rm(file);
+        }
+    }
+
+    private static void addFilesToCWD(Map<String, String> tracked) {
+        for (var entry : tracked.entrySet()) {
+            writeContents(
+              join(CWD, entry.getKey()),
+              Blob.readFromFile(entry.getValue()).getContent()
+            );
         }
     }
 
