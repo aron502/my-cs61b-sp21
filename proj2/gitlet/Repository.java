@@ -1,11 +1,10 @@
 package gitlet;
 
 import java.io.File;
-import java.io.FilenameFilter;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static gitlet.Utils.*;
 
@@ -62,7 +61,7 @@ public class Repository {
 
         var blob = new Blob(file);
         var stage = Stage.readFromFile();
-        var id = new TripleId(blob, stage, fileName);
+        var id = new TrackBlobStageId(blob, stage, fileName);
 
         if (id.trackId.equals(id.blobId)) {
             if (!id.stageId.isEmpty()) {
@@ -98,7 +97,7 @@ public class Repository {
 
         var blob = new Blob(file);
         var stage = Stage.readFromFile();
-        var id = new TripleId(blob, stage, fileName);
+        var id = new TrackBlobStageId(blob, stage, fileName);
 
         checkStageIdAndHeadId(id.stageId, id.trackId);
         if (!id.stageId.isEmpty()) {
@@ -136,13 +135,15 @@ public class Repository {
         var sb = new StringBuilder();
         String headName = readContentsAsString(HEAD);
 
-        String branchNames = plainFilenamesIn(HEADS_DIR).stream()
+        String branchNames = myPlainFilenamesIn(HEADS_DIR).stream()
           .map(name -> name.equals(headName) ? "*" + name : name)
           .collect(Collectors.joining("\n"));
 
         var stage = Stage.readFromFile();
         String addedNames = String.join("\n", stage.getAdded().keySet());
         String removedNames = String.join("\n", stage.getRemoved());
+//        String unTrackedNames = String.join("\n",
+//                                getUnTrackedFiles(getHeadCommit().getTrackedFileNames()));
 
         sb.append("=== Branches ===\n")
           .append(branchNames)
@@ -150,6 +151,8 @@ public class Repository {
           .append(addedNames)
           .append("\n\n=== Removed Files ===\n")
           .append(removedNames);
+//          .append("\n\n=== Untracked Files ===\n")
+//          .append(unTrackedNames);
 
         System.out.println(sb);
     }
@@ -170,9 +173,9 @@ public class Repository {
     private static void checkoutBranch(String branchName) {
         checkIfBranchExists(branchName);
         checkIfCurrentBranch(branchName);
-        var tracked = Commit.readFromFile(readContentsAsString(join(HEADS_DIR, branchName)))
+        var tracked = Commit.readFromFile(getBranchId(branchName))
                                                   .getTracked();
-        checkUnTrackedFile(tracked);
+        checkUnTrackedFileExists(tracked.keySet());
         Stage.readFromFile().clear().save();
         clearCWD();
         addFilesToCWD(tracked);
@@ -208,6 +211,7 @@ public class Repository {
 
     public static void rmBranch(String branchName) {
         File file = join(HEADS_DIR, branchName);
+        checkBranchExists(file);
         checkIfBranchCanRemove(file);
         rm(file);
     }
@@ -226,16 +230,157 @@ public class Repository {
     }
 
     public static void merge(String branchName) {
-        
+        File file = join(HEADS_DIR, branchName);
+        checkBranchExists(file);
+
+        var stage = Stage.readFromFile();
+        if (!stage.isEmpty()) {
+            System.out.println("You have uncommitted changes.");
+            System.exit(0);
+        }
+        String currentName = getCurrentBranch();
+        if (currentName.equals(branchName)) {
+            System.out.println("Cannot merge a branch with itself.");
+            System.exit(0);
+        }
+
+        var branchCommit = Commit.readFromFile(readContentsAsString(file));
+        var headCommit = getHeadCommit();
+        var ancestor = getSplitPonintCommit(branchCommit, headCommit);
+
+        if (ancestor.equals(branchCommit)) {
+            System.out.println("Given branch is an ancestor of the current branch.");
+            return;
+        }
+        if (ancestor.equals(headCommit)) {
+            checkoutBranch(currentName);
+            System.out.println("Current branch fast-forwarded.");
+            return;
+        }
+
+        merge(branchCommit, headCommit, ancestor);
+
+    }
+
+    private static void merge(Commit branch, Commit head, Commit ancestor) {
+        var modified = new HashSet<String>();
+        var removed = new HashSet<String>();
+        var conflicted = new HashSet<String>();
+
+        var fileNames = getFileNames(branch, head, ancestor);
+        for (String fileName : fileNames) {
+            String branchId = branch.getTracked().getOrDefault(fileName, "");
+            String headId = head.getTracked().getOrDefault(fileName, "");
+            String ancestorId = ancestor.getTracked().getOrDefault(fileName, "");
+
+            if (headId.equals(branchId) || ancestorId.equals(branchId)) {
+                // head's tracked same with branch's tracked
+                // branch's tracked same with ancestor's tracked
+                continue;
+            }
+            if (ancestorId.equals(headId)) {
+                if (branchId.isEmpty()) {
+                    removed.add(fileName);
+                } else {
+                    modified.add(fileName);
+                }
+            } else {
+                conflicted.add(fileName);
+            }
+        }
+
+        var untrackedFiles = getUnTrackedFiles(head.getTrackedFileNames());
+        for (String fileName : untrackedFiles) {
+            if (removed.contains(fileName) || modified.contains(fileName) || conflicted.contains(fileName)) {
+                System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+                System.exit(0);
+            }
+        }
+
+        if (!removed.isEmpty()) {
+            removed.forEach(Repository::remove);
+        }
+
+        if (!modified.isEmpty()) {
+            modified.forEach(name -> {
+                writeContents(join(CWD, name),
+                  Blob.readFromFile(branch.getTrackedId(name)).getContent());
+                add(name);
+            });
+        }
+
+        if (!conflicted.isEmpty()) {
+            conflicted.forEach(name -> {
+                String headContent = readContentsAsString(getObjectFile(head.getTrackedId(name)));
+                String branchContent = readContentsAsString(getObjectFile(branch.getTrackedId(name)));
+                writeContents(join(CWD, name),
+                  "<<<<<<< HEAD\n" + headContent + "=======\n" + branchContent + ">>>>>>>");
+            });
+        }
+    }
+
+    private static Set<String> getUnTrackedFiles(Set<String> headTracked) {
+        var stage = Stage.readFromFile();
+        return myPlainFilenamesIn(CWD)
+              .stream()
+              .filter(name -> !headTracked.contains(name) && !stage.contains(name))
+              .collect(Collectors.toSet());
+    }
+
+
+    private static Set<String> getFileNames(Commit branch, Commit head, Commit ancestor) {
+        return Stream.of(branch.getTrackedFileNames(),
+                        head.getTrackedFileNames(),
+                        ancestor.getTrackedFileNames())
+                     .flatMap(Set::stream)
+                     .collect(Collectors.toSet());
+    }
+
+    public static void dfs(Commit cmt, Set<String> set) {
+        if (cmt == null) {
+            return;
+        }
+        set.add(cmt.getId());
+        dfs(Commit.readFromFile(cmt.getFirstParent()), set);
+        dfs(Commit.readFromFile(cmt.getSecondParent()), set);
+    }
+
+    private static String getBranchId(String currentName) {
+        return readContentsAsString(join(HEADS_DIR, currentName));
+    }
+
+    private static Commit getSplitPonintCommit(Commit branchCommit, Commit currentCommit) {
+        var set = new HashSet<String>();
+        dfs(branchCommit, set);
+        Queue<Commit> queue = new LinkedList<>();
+        queue.add(currentCommit);
+        while (!queue.isEmpty()) {
+            var cmt = queue.poll();
+            if (set.contains(cmt.getId())) {
+                return cmt;
+            }
+            String firstParent = cmt.getFirstParent();
+            String secondParent = cmt.getSecondParent();
+            if (firstParent != null) {
+                queue.add(Commit.readFromFile(firstParent));
+            }
+            if (secondParent != null) {
+                queue.add(Commit.readFromFile(secondParent));
+            }
+        }
+        return new Commit();
     }
 
     private static void checkIfBranchCanRemove(File file) {
-        if (!file.exists()) {
-            System.out.println("A branch with that name does not exist.");
-            System.exit(0);
-        }
         if (readContentsAsString(HEAD).equals(file.getName())) {
             System.out.println("Cannot remove the current branch.");
+            System.exit(0);
+        }
+    }
+
+    private static void checkBranchExists(File file) {
+        if (!file.exists()) {
+            System.out.println("A branch with that name does not exist.");
             System.exit(0);
         }
     }
@@ -335,12 +480,10 @@ public class Repository {
         processCommit(Commit.readFromFile(cmt.getSecondParent()), action);
     }
 
-    private static void checkUnTrackedFile(Map<String, String> trakced) {
-        for (String fileName : plainFilenamesIn(CWD)) {
-            if (!trakced.containsKey(fileName)) {
-                System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
-                System.exit(0);
-            }
+    private static void checkUnTrackedFileExists(Set<String> trakced) {
+        if (!getUnTrackedFiles(trakced).isEmpty()) {
+            System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+            System.exit(0);
         }
     }
 
@@ -359,14 +502,11 @@ public class Repository {
     }
 
     private static void clearCWD() {
-        var files = CWD.listFiles(new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
-                return !name.equals(".gitlet");
+        var files = CWD.listFiles((dir, name) -> !name.equals(".gitlet"));
+        if (files != null) {
+            for (var file : files) {
+                rm(file);
             }
-        });
-        for (var file : files) {
-            rm(file);
         }
     }
 
@@ -379,12 +519,20 @@ public class Repository {
         }
     }
 
-    private static class TripleId {
+    private static List<String> myPlainFilenamesIn(File file) {
+        var list = plainFilenamesIn(file);
+        if (list == null) {
+            return new ArrayList<>();
+        }
+        return list;
+    }
+
+    private static class TrackBlobStageId {
         final String trackId;
         final String blobId;
         final String stageId;
 
-        TripleId(Blob blob, Stage stage, String fileName) {
+       TrackBlobStageId(Blob blob, Stage stage, String fileName) {
             trackId = getHeadCommit()
                     .getTracked()
                     .getOrDefault(fileName, "");

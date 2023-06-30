@@ -43,11 +43,15 @@ public class Stage implements Serializable {
     }
 
     /**
-     * Delete fileName from staging area.
+     * Delete file from staging area.
      */
     public void delete(String fileName) {
         added.remove(fileName);
         removed.remove(fileName);
+    }
+
+    public boolean contains(String fileName) {
+        return added.containsKey(fileName) && removed.contains(fileName);
     }
 
 }

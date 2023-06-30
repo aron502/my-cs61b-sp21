@@ -3,3 +3,4 @@
 !/.gitignore
 */target/**
 library-sp21/
+*.class

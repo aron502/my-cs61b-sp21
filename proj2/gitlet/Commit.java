@@ -108,6 +108,15 @@ public class Commit implements Serializable {
         return id;
     }
 
+    public Set<String> getTrackedFileNames() {
+        return tracked.keySet();
+    }
+
+
+    private String generateID() {
+        return sha1(date.toString(), message, parents.toString(), tracked.toString());
+    }
+
     @Override
     public String toString() {
         return "===\n" +
@@ -119,7 +128,14 @@ public class Commit implements Serializable {
                "%s\n".formatted(message);
     }
 
-    private String generateID() {
-        return sha1(date.toString(), message, parents.toString(), tracked.toString());
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (other == null || other.getClass() != getClass()) {
+            return false;
+        }
+        return ((Commit)other).id.equals(id);
     }
 }
