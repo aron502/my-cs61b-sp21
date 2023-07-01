@@ -92,6 +92,19 @@ class Utils {
             System.exit(0);
         }
     }
+
+
+    static void deleteFiles(File f) {
+        if (f.isDirectory()) {
+            var list = f.listFiles();
+            if (list != null) {
+                for (var file : list) {
+                    deleteFiles(file);
+                }
+            }
+        }
+        rm(f);
+    }
     /* my util function end */
 
     /** Returns the SHA-1 hash of the concatenation of the strings in

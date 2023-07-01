@@ -322,7 +322,7 @@ public class Repository {
                 || modified.contains(fileName)
                 || conflicted.contains(fileName)) {
                 System.out.println("""
-                                    There is an untracked file in the way;
+                                    There is an untracked file in the way;\
                                      delete it, or add and commit it first.
                                     """);
                 System.exit(0);
@@ -520,7 +520,7 @@ public class Repository {
     private static void checkUnTrackedFileExists(Set<String> trakced) {
         if (!getUnTrackedFiles(trakced).isEmpty()) {
             System.out.println("""
-                               There is an untracked file in the way;
+                               There is an untracked file in the way; \
                                delete it, or add and commit it first.
                                 """);
             System.exit(0);
@@ -545,7 +545,7 @@ public class Repository {
         var files = CWD.listFiles((dir, name) -> !name.equals(".gitlet"));
         if (files != null) {
             for (var file : files) {
-                rm(file);
+                deleteFiles(file);
             }
         }
     }

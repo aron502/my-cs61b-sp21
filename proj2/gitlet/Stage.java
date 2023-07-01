@@ -51,7 +51,7 @@ public class Stage implements Serializable {
     }
 
     public boolean contains(String fileName) {
-        return added.containsKey(fileName) && removed.contains(fileName);
+        return added.containsKey(fileName) || removed.contains(fileName);
     }
 
 }
