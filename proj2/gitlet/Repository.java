@@ -54,7 +54,7 @@ public class Repository {
         writeHeadBranch(DEFAULT_BRANCH, id);
     }
 
-    /** gitlet add file. */
+    /** gitlet add fileName */
     public static void add(String fileName) {
         File file = join(CWD, fileName);
         checkFileExists(file);
@@ -83,7 +83,11 @@ public class Repository {
         checkMsgEmpty(msg);
         var stage = Stage.readFromFile();
         checkStageEmpty(stage);
-        var newCommit = new Commit(msg, List.of(getHeadCommit()), stage);
+        commit(msg, List.of(getHeadCommit()), stage);
+    }
+
+    private static void commit(String msg, List<Commit> parents, Stage stage) {
+        var newCommit = new Commit(msg, parents, stage);
         newCommit.save();
         String id = newCommit.getId();
         writeHeadBranch(getCurrentBranch(), id);
@@ -91,7 +95,7 @@ public class Repository {
              .save();
     }
 
-    /** gitlet rm */
+    /** gitlet rm fileName */
     public static void remove(String fileName) {
         File file = join(CWD, fileName);
 
@@ -113,6 +117,7 @@ public class Repository {
         stage.save();
     }
 
+    /** gitlet log */
     public static void log() {
         var sb = new StringBuilder();
         var head = getHeadCommit();
@@ -123,14 +128,17 @@ public class Repository {
         System.out.print(sb);
     }
 
+    /** gitlet global-log */
     public static void globalLog() {
         printAllCommit(getHeadCommit());
     }
 
+    /** gitlet find */
     public static void find(String msg) {
         printAllId(getHeadCommit(), msg);
     }
 
+    /** gitlet status */
     public static void status() {
         var sb = new StringBuilder();
         String headName = readContentsAsString(HEAD);
@@ -157,6 +165,7 @@ public class Repository {
         System.out.println(sb);
     }
 
+    /** gitlet checkout */
     public static void checkout(String[] args) {
         if (args.length == 2) {
             checkoutBranch(args[1]);
@@ -203,12 +212,14 @@ public class Repository {
         );
     }
 
+    /** gitlet branch branchName */
     public static void branch(String branchName) {
         File file = join(HEADS_DIR, branchName);
         checkBranchFile(file);
         writeContents(file, getHeadCommit().getId());
     }
 
+    /** gitlet rm-branch branchName */
     public static void rmBranch(String branchName) {
         File file = join(HEADS_DIR, branchName);
         checkBranchExists(file);
@@ -216,6 +227,7 @@ public class Repository {
         rm(file);
     }
 
+    /** gitlet reset commitId */
     public static void reset(String commitId) {
         if (!getObjectFile(commitId).exists()) {
             System.out.println("No commit with that id exists.");
@@ -229,6 +241,7 @@ public class Repository {
         writeHeadBranch(readContentsAsString(HEAD), commit.getId());
     }
 
+    /** gitlet merge branchName */
     public static void merge(String branchName) {
         File file = join(HEADS_DIR, branchName);
         checkBranchExists(file);
@@ -238,8 +251,8 @@ public class Repository {
             System.out.println("You have uncommitted changes.");
             System.exit(0);
         }
-        String currentName = getCurrentBranch();
-        if (currentName.equals(branchName)) {
+        String headName = getCurrentBranch();
+        if (headName.equals(branchName)) {
             System.out.println("Cannot merge a branch with itself.");
             System.exit(0);
         }
@@ -253,13 +266,16 @@ public class Repository {
             return;
         }
         if (ancestor.equals(headCommit)) {
-            checkoutBranch(currentName);
+            checkoutBranch(headName);
             System.out.println("Current branch fast-forwarded.");
             return;
         }
 
         merge(branchCommit, headCommit, ancestor);
-
+        commit("Merged %s into %s.".formatted(branchName, headName),
+          List.of(branchCommit, headCommit),
+          stage
+        );
     }
 
     private static void merge(Commit branch, Commit head, Commit ancestor) {
@@ -314,7 +330,8 @@ public class Repository {
                 String headContent = readContentsAsString(getObjectFile(head.getTrackedId(name)));
                 String branchContent = readContentsAsString(getObjectFile(branch.getTrackedId(name)));
                 writeContents(join(CWD, name),
-                  "<<<<<<< HEAD\n" + headContent + "=======\n" + branchContent + ">>>>>>>");
+                  "<<<<<<< HEAD\n" + headContent + "\n=======\n" + branchContent + "\n>>>>>>>");
+                System.out.println("Encountered a merge conflict.");
             });
         }
     }
@@ -510,6 +527,7 @@ public class Repository {
         }
     }
 
+    /** add all tracked files to CWD. */
     private static void addFilesToCWD(Map<String, String> tracked) {
         for (var entry : tracked.entrySet()) {
             writeContents(
