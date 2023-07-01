@@ -37,10 +37,10 @@ public class Commit implements Serializable {
     public Commit() {
         message = INITIAL_MSG;
         date = new Date(0);
-        parents = new LinkedList<>();
+        parents = new ArrayList<>(2);
         tracked = new HashMap<>();
         id = generateID();
-        file = getObjectFile(id);
+        file = join(Repository.COMMITS_DIR, id);
     }
 
     public Commit(String msg, List<Commit> parents, Stage stage) {
@@ -52,12 +52,12 @@ public class Commit implements Serializable {
         tracked.putAll(stage.getAdded());
         stage.getRemoved().forEach(tracked::remove);
         id = generateID();
-        file = getObjectFile(id);
+        file = join(Repository.COMMITS_DIR, id);
     }
 
     public static Commit readFromFile(String id) {
         File file = join(Repository.COMMITS_DIR, id);
-        if (id == null || !file.exists()) {
+        if (id.isEmpty() || !file.exists()) {
             return null;
         }
         return readObject(file, Commit.class);
@@ -81,14 +81,14 @@ public class Commit implements Serializable {
 
     public String getFirstParent() {
         if (parents.isEmpty()) {
-            return null;
+            return "";
         }
         return parents.get(0);
     }
 
     public String getSecondParent() {
         if (parents.size() < 2) {
-            return null;
+            return "";
         }
         return parents.get(1);
     }

@@ -52,6 +52,7 @@ public class Repository {
         mkdir(REFS_DIR);
         mkdir(HEADS_DIR);
         mkdir(OBJECTS_DIR);
+        mkdir(COMMITS_DIR);
         mkstage();
         String id = initialCommit();
         writeHEAD(DEFAULT_BRANCH);
@@ -414,10 +415,10 @@ public class Repository {
             }
             String firstParent = cmt.getFirstParent();
             String secondParent = cmt.getSecondParent();
-            if (firstParent != null) {
+            if (firstParent.isEmpty()) {
                 queue.add(Commit.readFromFile(firstParent));
             }
-            if (secondParent != null) {
+            if (secondParent.isEmpty()) {
                 queue.add(Commit.readFromFile(secondParent));
             }
         }
@@ -461,7 +462,7 @@ public class Repository {
     private static Commit getHeadCommit() {
         String branch = getCurrentBranch();
         String id = readContentsAsString(join(HEADS_DIR, branch));
-        return readObject(getObjectFile(id), Commit.class);
+        return readObject(join(COMMITS_DIR, id), Commit.class);
     }
 
     private static String getCurrentBranch() {
