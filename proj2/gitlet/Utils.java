@@ -87,7 +87,7 @@ class Utils {
     }
 
     static void rm(File f) {
-        if (!restrictedDelete(f)) {
+        if (!f.delete()) {
             System.out.println("Failed to delete: " + f.getName());
             System.exit(0);
         }

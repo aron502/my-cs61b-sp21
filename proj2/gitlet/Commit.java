@@ -1,17 +1,13 @@
 package gitlet;
 
-// TODO: any imports you need here
-
 import java.io.File;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static gitlet.Utils.*;
 
 /** Represents a gitlet commit object.
- *  TODO: It's a good idea to give a description here of what else this Class
  *  does at a high level.
  *
  *  @author aron502
@@ -119,13 +115,13 @@ public class Commit implements Serializable {
 
     @Override
     public String toString() {
-        return "===\n" +
-               "commit %s\n".formatted(id) +
-               (parents.size() == 2
+        return "===\n"
+               + "commit %s\n".formatted(id)
+               + (parents.size() == 2
                  ? "Merge: %s %s\n".formatted(parents.get(0).substring(0, 7), parents.get(1).substring(0, 7))
-                 : "") +
-               "Date: %s\n".formatted(getTimeStamp()) +
-               "%s\n".formatted(message);
+                 : "")
+               + "Date: %s\n".formatted(getTimeStamp())
+               + "%s\n".formatted(message);
     }
 
     @Override
@@ -137,5 +133,10 @@ public class Commit implements Serializable {
             return false;
         }
         return ((Commit)other).id.equals(id);
+    }
+
+    @Override
+    public int hashCode() {
+        return id.hashCode();
     }
 }
