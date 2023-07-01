@@ -56,10 +56,11 @@ public class Commit implements Serializable {
     }
 
     public static Commit readFromFile(String id) {
-        if (id == null) {
+        File file = join(Repository.COMMITS_DIR, id);
+        if (id == null || !file.exists()) {
             return null;
         }
-        return readObject(getObjectFile(id), Commit.class);
+        return readObject(file, Commit.class);
     }
 
     public void save() {

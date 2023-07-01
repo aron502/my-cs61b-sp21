@@ -31,12 +31,14 @@ public class Repository {
     public static final File REFS_DIR = join(GITLET_DIR, "refs");
     /** The branch heads dir. */
     public static final File HEADS_DIR = join(REFS_DIR, "heads");
-    /** The blobs dir. */
+    /** The blobs dir (not store commits). */
     public static final File OBJECTS_DIR = join(GITLET_DIR, "objects");
     /** The index file. (store stage). */
     public static final File INDEX = join(GITLET_DIR, "index");
     /** The HEAD file. */
     public static final File HEAD = join(GITLET_DIR, "HEAD");
+    /** Store commits dir. */
+    public static final File COMMITS_DIR = join(OBJECTS_DIR, "commits");
 
     public static void init() {
         if (GITLET_DIR.exists()) {
@@ -132,12 +134,26 @@ public class Repository {
 
     /** gitlet global-log */
     public static void globalLog() {
-        printAllCommit(getHeadCommit());
+        System.out.println(
+            myPlainFilenamesIn(COMMITS_DIR).stream()
+                .map(Commit::readFromFile)
+                .map(commit -> commit.toString())
+                .collect(Collectors.joining("\n"))
+        );
     }
 
     /** gitlet find */
     public static void find(String msg) {
-        printAllId(getHeadCommit(), msg);
+        String result = myPlainFilenamesIn(COMMITS_DIR).stream()
+                        .map(Commit::readFromFile)
+                        .filter(commit -> commit.getMessage().equals(msg))
+                        .map(Commit::getId)
+                        .collect(Collectors.joining("\n"));
+        if (result.isEmpty()) {
+            System.out.println("Found no commit with that message.");
+            System.exit(0);
+        }
+        System.out.println(result);
     }
 
     /** gitlet status */
@@ -492,29 +508,6 @@ public class Repository {
             System.out.println("File does not exist.");
             System.exit(0);
         }
-    }
-
-    private static void printAllCommit(Commit cmt) {
-        processCommit(cmt, System.out::println);
-    }
-
-    private static void printAllId(Commit cmt, String msg) {
-        processCommit(cmt, commit -> {
-            if (commit.getMessage().equals(msg)) {
-                System.out.println(commit.getId());
-            }
-        });
-    }
-
-    private static void processCommit(Commit cmt, Consumer<Commit> action) {
-        if (cmt == null) {
-            return;
-        }
-
-        action.accept(cmt);
-
-        processCommit(Commit.readFromFile(cmt.getFirstParent()), action);
-        processCommit(Commit.readFromFile(cmt.getSecondParent()), action);
     }
 
     private static void checkUnTrackedFileExists(Set<String> trakced) {
