@@ -66,7 +66,7 @@ public class Repository {
         var id = new TrackBlobStageId(blob, stage, fileName);
 
         if (id.trackId.equals(id.blobId)) {
-            if (!id.stageId.isEmpty()) {
+            if (!id.blobId.equals(id.stageId)) {
                 rm(getObjectFile(id.stageId));
                 stage.delete(fileName);
             }
