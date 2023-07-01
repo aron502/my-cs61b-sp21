@@ -114,7 +114,7 @@ public class Repository {
         }
 
         if (blob.exists() && id.blobId.equals(id.trackId)) {
-            restrictedDelete(getObjectFile(id.blobId));
+            restrictedDelete(file);
         }
         stage.save();
     }
@@ -158,17 +158,20 @@ public class Repository {
         String removedNames = stage.getRemoved().stream()
           .sorted()
           .collect(Collectors.joining("\n"));
-//        String unTrackedNames = String.join("\n",
-//                                getUnTrackedFiles(getHeadCommit().getTrackedFileNames()));
+        String modifiedNames = "";
+        String unTrackedNames = String.join("\n",
+                                getUnTrackedFiles(getHeadCommit().getTrackedFileNames()));
 
         sb.append("=== Branches ===\n")
           .append(branchNames)
           .append("\n\n=== Staged Files ===\n")
           .append(addedNames.isEmpty() ? addedNames : addedNames + "\n")
           .append("\n=== Removed Files ===\n")
-          .append(removedNames);
-//          .append("\n\n=== Untracked Files ===\n")
-//          .append(unTrackedNames);
+          .append(removedNames.isEmpty() ? removedNames : removedNames + "\n")
+          .append("\n=== Modifications Not Staged For Commit ===\n")
+          .append(modifiedNames.isEmpty() ? modifiedNames : modifiedNames + "\n")
+          .append("\n=== Untracked Files ===\n")
+          .append(unTrackedNames.isEmpty() ? unTrackedNames : unTrackedNames + "\n");
 
         System.out.println(sb);
     }
@@ -354,12 +357,11 @@ public class Repository {
         }
     }
 
-    private static Set<String> getUnTrackedFiles(Set<String> headTracked) {
+    private static List<String> getUnTrackedFiles(Set<String> headTracked) {
         var stage = Stage.readFromFile();
-        return myPlainFilenamesIn(CWD)
-              .stream()
+        return myPlainFilenamesIn(CWD).stream().sorted()
               .filter(name -> !headTracked.contains(name) && !stage.contains(name))
-              .collect(Collectors.toSet());
+              .collect(Collectors.toList());
     }
 
 
