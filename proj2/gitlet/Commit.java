@@ -29,7 +29,8 @@ public class Commit implements Serializable {
     private final Map<String, String> tracked;
     // commit blob file
     private final File file;
-    private final SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy Z", Locale.ENGLISH);
+    private final SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy Z",
+                                                              Locale.ENGLISH);
     public static final String INITIAL_MSG = "initial commit";
 
 
@@ -96,12 +97,12 @@ public class Commit implements Serializable {
     }
 
     public String getTrackedId(String fileName) {
-        String id = tracked.get(fileName);
-        if (id == null) {
+        String fileId = tracked.get(fileName);
+        if (fileId == null) {
             System.out.println("File does not exist in that commit.");
             System.exit(0);
         }
-        return id;
+        return fileId;
     }
 
     public Set<String> getTrackedFileNames() {
@@ -118,7 +119,8 @@ public class Commit implements Serializable {
         return "===\n"
                + "commit %s\n".formatted(id)
                + (parents.size() == 2
-                 ? "Merge: %s %s\n".formatted(parents.get(0).substring(0, 7), parents.get(1).substring(0, 7))
+                 ? "Merge: %s %s\n".formatted(parents.get(0).substring(0, 7),
+                                              parents.get(1).substring(0, 7))
                  : "")
                + "Date: %s\n".formatted(getTimeStamp())
                + "%s\n".formatted(message);
@@ -132,7 +134,7 @@ public class Commit implements Serializable {
         if (other == null || other.getClass() != getClass()) {
             return false;
         }
-        return ((Commit)other).id.equals(id);
+        return ((Commit) other).id.equals(id);
     }
 
     @Override
