@@ -104,7 +104,7 @@ public class Commit implements Serializable {
     public String getTrackedId(String fileName) {
         if (!tracked.containsKey(fileName)) {
             System.out.println("File does not exist in that commit.");
-            return "";
+            System.exit(0);
         }
         return tracked.get(fileName);
     }

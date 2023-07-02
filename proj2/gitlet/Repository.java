@@ -88,7 +88,7 @@ public class Repository {
         var stage = Stage.readFromFile();
         var stageId = stage.getAddedFileID(fileName);
         var blobId = blob.getId();
-        var headId = getHeadCommit().getTrackedId(fileName);
+        var headId = getHeadCommit().getTracked().getOrDefault(fileName, "");
 
         if (blobId.equals(headId)) {
             if (!blobId.equals(stageId)) {
@@ -138,7 +138,7 @@ public class Repository {
             stage.getRemoved().add(fileName);
         }
 
-        var headId = getHeadCommit().getTrackedId(fileName);
+        var headId = getHeadCommit().getTracked().getOrDefault(fileName, "");
         var blob = new Blob(file);
         if (blob.exists() && blob.getId().equals(headId)) {
             restrictedDelete(file);
