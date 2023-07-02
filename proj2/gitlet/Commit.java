@@ -56,7 +56,7 @@ public class Commit implements Serializable {
     }
 
     public static Commit readFromFile(String id) {
-        if (id == null) {
+        if (id.isEmpty()) {
             return null;
         }
         var file = join(Repository.COMMITS_DIR, id);
