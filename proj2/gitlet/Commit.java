@@ -59,12 +59,16 @@ public class Commit implements Serializable {
         if (id.isEmpty()) {
             return null;
         }
-        var file = join(Repository.COMMITS_DIR, id);
-        if (!file.exists()) {
-            System.out.println("No commit with that id exists.");
-            System.exit(0);
-        }
-        return readObject(file, Commit.class);
+        return plainFilenamesIn(Repository.COMMITS_DIR)
+               .stream()
+               .filter(name -> name.startsWith(id))
+               .findFirst()
+               .map(name -> readObject(join(Repository.COMMITS_DIR, name), Commit.class))
+               .orElseThrow(() -> {
+                   System.out.println("No commit with that id exists.");
+                   System.exit(0);
+                   return null;
+               });
     }
 
     public void save() {

@@ -77,14 +77,6 @@ class Utils {
         }
     }
 
-    static void rm(File f) {
-        if (!f.delete()) {
-            System.out.println("Failed to delete: " + f.getName());
-            System.exit(0);
-        }
-    }
-
-
     static void deleteFiles(File f) {
         if (f.isDirectory()) {
             var list = f.listFiles();
@@ -94,7 +86,7 @@ class Utils {
                 }
             }
         }
-        rm(f);
+        f.delete();
     }
     /* my util function end */
 
