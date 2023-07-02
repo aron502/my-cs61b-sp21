@@ -12,10 +12,10 @@ public class Blob implements Serializable {
     public Blob(File f) {
         if (f.exists()) {
             content = readContents(f);
-            id = sha1(f.getPath(), content);
+            id = sha1(f.getName(), content);
         } else {
             content = null;
-            id = sha1(f.getPath());
+            id = sha1(f.getName());
         }
         file = getObjectFile(id);
     }

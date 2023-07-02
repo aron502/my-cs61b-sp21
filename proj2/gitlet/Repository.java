@@ -53,15 +53,15 @@ public class Repository {
         mkdir(HEADS_DIR);
         mkdir(OBJECTS_DIR);
         mkdir(COMMITS_DIR);
-        mkstage();
-        String id = initialCommit();
+        new Stage().save();
+        var id = initialCommit();
         writeHEAD(DEFAULT_BRANCH);
         writeHeadBranch(DEFAULT_BRANCH, id);
     }
 
     /** gitlet add fileName */
     public static void add(String fileName) {
-        File file = join(CWD, fileName);
+        var file = join(CWD, fileName);
         checkFileExists(file);
 
         var blob = new Blob(file);
@@ -94,7 +94,7 @@ public class Repository {
     private static void commit(String msg, List<Commit> parents, Stage stage) {
         var newCommit = new Commit(msg, parents, stage);
         newCommit.save();
-        String id = newCommit.getId();
+        var id = newCommit.getId();
         writeHeadBranch(getCurrentBranch(), id);
         stage.clear()
              .save();
@@ -102,7 +102,7 @@ public class Repository {
 
     /** gitlet rm fileName */
     public static void remove(String fileName) {
-        File file = join(CWD, fileName);
+        var file = join(CWD, fileName);
 
         var blob = new Blob(file);
         var stage = Stage.readFromFile();
@@ -145,7 +145,7 @@ public class Repository {
 
     /** gitlet find */
     public static void find(String msg) {
-        String result = myPlainFilenamesIn(COMMITS_DIR).stream()
+        var result = myPlainFilenamesIn(COMMITS_DIR).stream()
                         .map(Commit::readFromFile)
                         .filter(commit -> commit.getMessage().equals(msg))
                         .map(Commit::getId)
@@ -160,23 +160,23 @@ public class Repository {
     /** gitlet status */
     public static void status() {
         var sb = new StringBuilder();
-        String headName = readContentsAsString(HEAD);
+        var headName = readContentsAsString(HEAD);
 
-        String branchNames = myPlainFilenamesIn(HEADS_DIR).stream()
+        var branchNames = myPlainFilenamesIn(HEADS_DIR).stream()
                              .sorted()
                              .map(name -> name.equals(headName)
                                  ? "*" + name : name)
                              .collect(Collectors.joining("\n"));
 
         var stage = Stage.readFromFile();
-        String addedNames = stage.getAdded().keySet().stream()
+        var addedNames = stage.getAdded().keySet().stream()
           .sorted()
           .collect(Collectors.joining("\n"));
-        String removedNames = stage.getRemoved().stream()
+        var removedNames = stage.getRemoved().stream()
           .sorted()
           .collect(Collectors.joining("\n"));
-        String modifiedNames = "";
-        String unTrackedNames = String.join("\n",
+        var modifiedNames = "";
+        var unTrackedNames = String.join("\n",
                                 getUnTrackedFiles(getHeadCommit().getTrackedFileNames()));
 
         sb.append("=== Branches ===\n")
@@ -220,7 +220,7 @@ public class Repository {
     }
 
     private static void checkoutFile(String fileName) {
-        String fileId = getHeadCommit().getTrackedId(fileName);
+        var fileId = getHeadCommit().getTrackedId(fileName);
         writeContents(
           join(CWD, fileName),
           Blob.readFromFile(fileId).getContent()
@@ -242,14 +242,14 @@ public class Repository {
 
     /** gitlet branch branchName */
     public static void branch(String branchName) {
-        File file = join(HEADS_DIR, branchName);
+        var file = join(HEADS_DIR, branchName);
         checkBranchFile(file);
         writeContents(file, getHeadCommit().getId());
     }
 
     /** gitlet rm-branch branchName */
     public static void rmBranch(String branchName) {
-        File file = join(HEADS_DIR, branchName);
+        var file = join(HEADS_DIR, branchName);
         checkBranchExists(file);
         checkIfBranchCanRemove(file);
         rm(file);
@@ -257,10 +257,6 @@ public class Repository {
 
     /** gitlet reset commitId */
     public static void reset(String commitId) {
-        if (!getObjectFile(commitId).exists()) {
-            System.out.println("No commit with that id exists.");
-            System.exit(0);
-        }
         var commit = Commit.readFromFile(commitId);
 
         clearCWD();
@@ -271,7 +267,7 @@ public class Repository {
 
     /** gitlet merge branchName */
     public static void merge(String branchName) {
-        File file = join(HEADS_DIR, branchName);
+        var file = join(HEADS_DIR, branchName);
         checkBranchExists(file);
 
         var stage = Stage.readFromFile();
@@ -279,7 +275,7 @@ public class Repository {
             System.out.println("You have uncommitted changes.");
             System.exit(0);
         }
-        String headName = getCurrentBranch();
+        var headName = getCurrentBranch();
         if (headName.equals(branchName)) {
             System.out.println("Cannot merge a branch with itself.");
             System.exit(0);
@@ -312,10 +308,10 @@ public class Repository {
         var conflicted = new HashSet<String>();
 
         var fileNames = getFileNames(branch, head, ancestor);
-        for (String fileName : fileNames) {
-            String branchId = branch.getTracked().getOrDefault(fileName, "");
-            String headId = head.getTracked().getOrDefault(fileName, "");
-            String ancestorId = ancestor.getTracked().getOrDefault(fileName, "");
+        for (var fileName : fileNames) {
+            var branchId = branch.getTracked().getOrDefault(fileName, "");
+            var headId = head.getTracked().getOrDefault(fileName, "");
+            var ancestorId = ancestor.getTracked().getOrDefault(fileName, "");
 
             if (headId.equals(branchId) || ancestorId.equals(branchId)) {
                 // head's tracked same with branch's tracked
@@ -334,7 +330,7 @@ public class Repository {
         }
 
         var untrackedFiles = getUnTrackedFiles(head.getTrackedFileNames());
-        for (String fileName : untrackedFiles) {
+        for (var fileName : untrackedFiles) {
             if (removed.contains(fileName)
                 || modified.contains(fileName)
                 || conflicted.contains(fileName)) {
@@ -360,10 +356,10 @@ public class Repository {
 
         if (!conflicted.isEmpty()) {
             conflicted.forEach(name -> {
-                String headContent = readContentsAsString(
+                var headContent = readContentsAsString(
                     getObjectFile(head.getTrackedId(name))
                 );
-                String branchContent = readContentsAsString(
+                var branchContent = readContentsAsString(
                     getObjectFile(branch.getTrackedId(name))
                 );
                 writeContents(join(CWD, name),
@@ -413,8 +409,8 @@ public class Repository {
             if (set.contains(cmt.getId())) {
                 return cmt;
             }
-            String firstParent = cmt.getFirstParent();
-            String secondParent = cmt.getSecondParent();
+            var firstParent = cmt.getFirstParent();
+            var secondParent = cmt.getSecondParent();
             if (firstParent.isEmpty()) {
                 queue.add(Commit.readFromFile(firstParent));
             }
@@ -454,14 +450,14 @@ public class Repository {
     }
 
     private static String initialCommit() {
-        Commit initial = new Commit();
+        var initial = new Commit();
         initial.save();
         return initial.getId();
     }
 
     private static Commit getHeadCommit() {
-        String branch = getCurrentBranch();
-        String id = readContentsAsString(join(HEADS_DIR, branch));
+        var branch = getCurrentBranch();
+        var id = readContentsAsString(join(HEADS_DIR, branch));
         return readObject(join(COMMITS_DIR, id), Commit.class);
     }
 
@@ -474,13 +470,8 @@ public class Repository {
     }
 
     private static void writeHeadBranch(String branchName, String id) {
-        File f = join(HEADS_DIR, branchName);
+        var f = join(HEADS_DIR, branchName);
         writeContents(f, id);
-    }
-
-    private static void mkstage() {
-        Stage staging = new Stage();
-        staging.save();
     }
 
     private static void checkStageIdAndHeadId(String stageId, String headId) {

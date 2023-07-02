@@ -59,16 +59,7 @@ class Utils {
 
     /* my util function */
     static File getObjectFile(String id) {
-        String dir = id.substring(0, 2);
-        if (id.length() == 6) {
-            return plainFilenamesIn(join(Repository.OBJECTS_DIR, dir)).stream()
-              .filter(fileName -> fileName.startsWith(id.substring(2, 6)))
-              .findFirst()
-              .map(fileName -> join(Repository.OBJECTS_DIR, dir, fileName))
-              .orElse(null);
-        }
-        String fileName = id.substring(2);
-        return join(Repository.OBJECTS_DIR, dir, fileName);
+        return join(Repository.OBJECTS_DIR, id);
     }
 
     static void saveObject(File f, Serializable obj) {

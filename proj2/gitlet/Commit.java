@@ -56,9 +56,13 @@ public class Commit implements Serializable {
     }
 
     public static Commit readFromFile(String id) {
-        File file = join(Repository.COMMITS_DIR, id);
-        if (id.isEmpty() || !file.exists()) {
+        if (id == null) {
             return null;
+        }
+        var file = join(Repository.COMMITS_DIR, id);
+        if (!file.exists()) {
+            System.out.println("No commit with that id exists.");
+            System.exit(0);
         }
         return readObject(file, Commit.class);
     }
@@ -98,7 +102,7 @@ public class Commit implements Serializable {
     }
 
     public String getTrackedId(String fileName) {
-        String fileId = tracked.get(fileName);
+        var fileId = tracked.get(fileName);
         if (fileId == null) {
             System.out.println("File does not exist in that commit.");
             System.exit(0);
