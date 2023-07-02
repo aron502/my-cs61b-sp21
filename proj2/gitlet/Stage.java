@@ -38,6 +38,11 @@ public class Stage implements Serializable {
         return added;
     }
 
+    /** return fileId in staging area, if it doesn't exist, return empty string. */
+    public String getAddedFileID(String fileName) {
+        return added.getOrDefault(fileName, "");
+    }
+
     public Set<String> getRemoved() {
         return removed;
     }

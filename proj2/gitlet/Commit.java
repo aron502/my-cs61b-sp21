@@ -102,12 +102,11 @@ public class Commit implements Serializable {
     }
 
     public String getTrackedId(String fileName) {
-        var fileId = tracked.get(fileName);
-        if (fileId == null) {
+        if (!tracked.containsKey(fileName)) {
             System.out.println("File does not exist in that commit.");
-            System.exit(0);
+            return "";
         }
-        return fileId;
+        return tracked.get(fileName);
     }
 
     public Set<String> getTrackedFileNames() {

@@ -15,37 +15,55 @@ import static gitlet.Utils.*;
  *  @author aron502
  */
 public class Repository {
-     /*
+    /*
      * List all instance variables of the Repository class here with a useful
      * comment above them describing what that variable represents and how that
      * variable is used. We've provided two examples for you.
      */
 
-    /** Default branch name. */
+    /**
+     * Default branch name.
+     */
     public static final String DEFAULT_BRANCH = "master";
-    /** The current working directory. */
+    /**
+     * The current working directory.
+     */
     public static final File CWD = new File(System.getProperty("user.dir"));
-    /** The .gitlet directory. */
+    /**
+     * The .gitlet directory.
+     */
     public static final File GITLET_DIR = join(CWD, ".gitlet");
-    /** The refs dir. */
+    /**
+     * The refs dir.
+     */
     public static final File REFS_DIR = join(GITLET_DIR, "refs");
-    /** The branch heads dir. */
+    /**
+     * The branch heads dir.
+     */
     public static final File HEADS_DIR = join(REFS_DIR, "heads");
-    /** The blobs dir (not store commits). */
+    /**
+     * The blobs dir (not store commits).
+     */
     public static final File OBJECTS_DIR = join(GITLET_DIR, "objects");
-    /** The index file. (store stage). */
+    /**
+     * The index file. (store stage).
+     */
     public static final File INDEX = join(GITLET_DIR, "index");
-    /** The HEAD file. */
+    /**
+     * The HEAD file.
+     */
     public static final File HEAD = join(GITLET_DIR, "HEAD");
-    /** Store commits dir. */
+    /**
+     * Store commits dir.
+     */
     public static final File COMMITS_DIR = join(OBJECTS_DIR, "commits");
 
     public static void init() {
         if (GITLET_DIR.exists()) {
             System.out.println("""
-                A Gitlet version-control system already
-                 exists in the current directory.
-                """);
+              A Gitlet version-control system already
+               exists in the current directory.
+              """);
             System.exit(0);
         }
         mkdir(GITLET_DIR);
@@ -59,31 +77,37 @@ public class Repository {
         writeHeadBranch(DEFAULT_BRANCH, id);
     }
 
-    /** gitlet add fileName */
+    /**
+     * gitlet add fileName
+     */
     public static void add(String fileName) {
         var file = join(CWD, fileName);
         checkFileExists(file);
 
         var blob = new Blob(file);
         var stage = Stage.readFromFile();
-        var id = new TrackBlobStageId(blob, stage, fileName);
+        var stageId = stage.getAddedFileID(fileName);
+        var blobId = blob.getId();
+        var headId = getHeadCommit().getTrackedId(fileName);
 
-        if (id.trackId.equals(id.blobId)) {
-            if (!id.blobId.equals(id.stageId)) {
-                rm(getObjectFile(id.stageId));
+        if (blobId.equals(headId)) {
+            if (!blobId.equals(stageId)) {
+                rm(getObjectFile(stageId));
                 stage.delete(fileName);
             }
-        } else if (!id.blobId.equals(id.stageId)) {
-            if (!id.stageId.isEmpty()) {
-                rm(getObjectFile(id.stageId));
+        } else if (!blobId.equals(stageId)) {
+            if (!stage.isEmpty()) {
+                rm(getObjectFile(stageId));
             }
             blob.save();
-            stage.addFile(fileName, id.blobId);
+            stage.addFile(fileName, blobId);
         }
         stage.save();
     }
 
-    /** gitlet commit */
+    /**
+     * gitlet commit
+     */
     public static void commit(String msg) {
         checkMsgEmpty(msg);
         var stage = Stage.readFromFile();
@@ -100,29 +124,32 @@ public class Repository {
              .save();
     }
 
-    /** gitlet rm fileName */
+    /**
+     * gitlet rm fileName
+     */
     public static void remove(String fileName) {
         var file = join(CWD, fileName);
 
-        var blob = new Blob(file);
         var stage = Stage.readFromFile();
-        var id = new TrackBlobStageId(blob, stage, fileName);
-
-        checkStageIdAndHeadId(id.stageId, id.trackId);
-        if (!id.stageId.isEmpty()) {
+        var stageId = stage.getAddedFileID(fileName);
+        if (!stageId.isEmpty()) {
             stage.getAdded().remove(fileName);
         } else {
-            // stageId is empty, headId not empty
             stage.getRemoved().add(fileName);
         }
 
-        if (blob.exists() && id.blobId.equals(id.trackId)) {
+        var headId = getHeadCommit().getTrackedId(fileName);
+        var blob = new Blob(file);
+        if (blob.exists() && blob.getId().equals(headId)) {
             restrictedDelete(file);
         }
+
         stage.save();
     }
 
-    /** gitlet log */
+    /**
+     * gitlet log
+     */
     public static void log() {
         var sb = new StringBuilder();
         var head = getHeadCommit();
@@ -133,23 +160,27 @@ public class Repository {
         System.out.print(sb);
     }
 
-    /** gitlet global-log */
+    /**
+     * gitlet global-log
+     */
     public static void globalLog() {
         System.out.println(
-            myPlainFilenamesIn(COMMITS_DIR).stream()
-                .map(Commit::readFromFile)
-                .map(commit -> commit.toString())
-                .collect(Collectors.joining("\n"))
+          myPlainFilenamesIn(COMMITS_DIR).stream()
+            .map(Commit::readFromFile)
+            .map(commit -> commit.toString())
+            .collect(Collectors.joining("\n"))
         );
     }
 
-    /** gitlet find */
+    /**
+     * gitlet find
+     */
     public static void find(String msg) {
         var result = myPlainFilenamesIn(COMMITS_DIR).stream()
-                        .map(Commit::readFromFile)
-                        .filter(commit -> commit.getMessage().equals(msg))
-                        .map(Commit::getId)
-                        .collect(Collectors.joining("\n"));
+          .map(Commit::readFromFile)
+          .filter(commit -> commit.getMessage().equals(msg))
+          .map(Commit::getId)
+          .collect(Collectors.joining("\n"));
         if (result.isEmpty()) {
             System.out.println("Found no commit with that message.");
             System.exit(0);
@@ -157,16 +188,18 @@ public class Repository {
         System.out.println(result);
     }
 
-    /** gitlet status */
+    /**
+     * gitlet status
+     */
     public static void status() {
         var sb = new StringBuilder();
         var headName = readContentsAsString(HEAD);
 
         var branchNames = myPlainFilenamesIn(HEADS_DIR).stream()
-                             .sorted()
-                             .map(name -> name.equals(headName)
-                                 ? "*" + name : name)
-                             .collect(Collectors.joining("\n"));
+          .sorted()
+          .map(name -> name.equals(headName)
+            ? "*" + name : name)
+          .collect(Collectors.joining("\n"));
 
         var stage = Stage.readFromFile();
         var addedNames = stage.getAdded().keySet().stream()
@@ -177,7 +210,7 @@ public class Repository {
           .collect(Collectors.joining("\n"));
         var modifiedNames = "";
         var unTrackedNames = String.join("\n",
-                                getUnTrackedFiles(getHeadCommit().getTrackedFileNames()));
+          getUnTrackedFiles(getHeadCommit().getTrackedFileNames()));
 
         sb.append("=== Branches ===\n")
           .append(branchNames)
@@ -193,7 +226,9 @@ public class Repository {
         System.out.println(sb);
     }
 
-    /** gitlet checkout */
+    /**
+     * gitlet checkout
+     */
     public static void checkout(String[] args) {
         if (args.length == 2) {
             checkoutBranch(args[1]);
@@ -211,7 +246,7 @@ public class Repository {
         checkIfBranchExists(branchName);
         checkIfCurrentBranch(branchName);
         var tracked = Commit.readFromFile(getBranchId(branchName))
-                                                  .getTracked();
+          .getTracked();
         checkUnTrackedFileExists(tracked.keySet());
         Stage.readFromFile().clear().save();
         clearCWD();
@@ -236,18 +271,22 @@ public class Repository {
         writeContents(
           join(CWD, fileName),
           Blob.readFromFile(commit.getTrackedId((fileName)))
-                   .getContent()
+            .getContent()
         );
     }
 
-    /** gitlet branch branchName */
+    /**
+     * gitlet branch branchName
+     */
     public static void branch(String branchName) {
         var file = join(HEADS_DIR, branchName);
         checkBranchFile(file);
         writeContents(file, getHeadCommit().getId());
     }
 
-    /** gitlet rm-branch branchName */
+    /**
+     * gitlet rm-branch branchName
+     */
     public static void rmBranch(String branchName) {
         var file = join(HEADS_DIR, branchName);
         checkBranchExists(file);
@@ -255,7 +294,9 @@ public class Repository {
         rm(file);
     }
 
-    /** gitlet reset commitId */
+    /**
+     * gitlet reset commitId
+     */
     public static void reset(String commitId) {
         var commit = Commit.readFromFile(commitId);
 
@@ -265,7 +306,9 @@ public class Repository {
         writeHeadBranch(readContentsAsString(HEAD), commit.getId());
     }
 
-    /** gitlet merge branchName */
+    /**
+     * gitlet merge branchName
+     */
     public static void merge(String branchName) {
         var file = join(HEADS_DIR, branchName);
         checkBranchExists(file);
@@ -297,8 +340,8 @@ public class Repository {
 
         merge(branchCommit, headCommit, ancestor);
         commit("Merged %s into %s.".formatted(branchName, headName),
-            List.of(branchCommit, headCommit),
-                     stage
+          List.of(branchCommit, headCommit),
+          stage
         );
     }
 
@@ -332,12 +375,12 @@ public class Repository {
         var untrackedFiles = getUnTrackedFiles(head.getTrackedFileNames());
         for (var fileName : untrackedFiles) {
             if (removed.contains(fileName)
-                || modified.contains(fileName)
-                || conflicted.contains(fileName)) {
+              || modified.contains(fileName)
+              || conflicted.contains(fileName)) {
                 System.out.println("""
-                                    There is an untracked file in the way;\
-                                     delete it, or add and commit it first.
-                                    """);
+                  There is an untracked file in the way;\
+                   delete it, or add and commit it first.
+                  """);
                 System.exit(0);
             }
         }
@@ -349,7 +392,7 @@ public class Repository {
         if (!modified.isEmpty()) {
             modified.forEach(name -> {
                 writeContents(join(CWD, name),
-                    Blob.readFromFile(branch.getTrackedId(name)).getContent());
+                  Blob.readFromFile(branch.getTrackedId(name)).getContent());
                 add(name);
             });
         }
@@ -357,14 +400,14 @@ public class Repository {
         if (!conflicted.isEmpty()) {
             conflicted.forEach(name -> {
                 var headContent = readContentsAsString(
-                    getObjectFile(head.getTrackedId(name))
+                  getObjectFile(head.getTrackedId(name))
                 );
                 var branchContent = readContentsAsString(
-                    getObjectFile(branch.getTrackedId(name))
+                  getObjectFile(branch.getTrackedId(name))
                 );
                 writeContents(join(CWD, name),
-                              "<<<<<<< HEAD\n" + headContent + "\n=======\n"
-                              + branchContent + "\n>>>>>>>");
+                  "<<<<<<< HEAD\n" + headContent + "\n=======\n"
+                    + branchContent + "\n>>>>>>>");
                 System.out.println("Encountered a merge conflict.");
             });
         }
@@ -373,17 +416,17 @@ public class Repository {
     private static List<String> getUnTrackedFiles(Set<String> headTracked) {
         var stage = Stage.readFromFile();
         return myPlainFilenamesIn(CWD).stream().sorted()
-              .filter(name -> !headTracked.contains(name) && !stage.contains(name))
-              .collect(Collectors.toList());
+          .filter(name -> !headTracked.contains(name) && !stage.contains(name))
+          .collect(Collectors.toList());
     }
 
 
     private static Set<String> getFileNames(Commit branch, Commit head, Commit ancestor) {
         return Stream.of(branch.getTrackedFileNames(),
-                        head.getTrackedFileNames(),
-                        ancestor.getTrackedFileNames())
-                     .flatMap(Set::stream)
-                     .collect(Collectors.toSet());
+            head.getTrackedFileNames(),
+            ancestor.getTrackedFileNames())
+          .flatMap(Set::stream)
+          .collect(Collectors.toSet());
     }
 
     public static void dfs(Commit cmt, Set<String> set) {
@@ -505,9 +548,9 @@ public class Repository {
     private static void checkUnTrackedFileExists(Set<String> trakced) {
         if (!getUnTrackedFiles(trakced).isEmpty()) {
             System.out.println("""
-                               There is an untracked file in the way; \
-                               delete it, or add and commit it first.
-                                """);
+              There is an untracked file in the way; \
+              delete it, or add and commit it first.
+               """);
             System.exit(0);
         }
     }
@@ -535,12 +578,14 @@ public class Repository {
         }
     }
 
-    /** add all tracked files to CWD. */
+    /**
+     * add all tracked files to CWD.
+     */
     private static void addFilesToCWD(Map<String, String> tracked) {
         for (var entry : tracked.entrySet()) {
             writeContents(
-                join(CWD, entry.getKey()),
-                Blob.readFromFile(entry.getValue()).getContent()
+              join(CWD, entry.getKey()),
+              Blob.readFromFile(entry.getValue()).getContent()
             );
         }
     }
@@ -551,19 +596,5 @@ public class Repository {
             return new ArrayList<>();
         }
         return list;
-    }
-
-    private static class TrackBlobStageId {
-        final String trackId;
-        final String blobId;
-        final String stageId;
-
-        TrackBlobStageId(Blob blob, Stage stage, String fileName) {
-            trackId = getHeadCommit()
-                    .getTracked()
-                    .getOrDefault(fileName, "");
-            blobId = blob.getId();
-            stageId = stage.getAdded().getOrDefault(fileName, "");
-        }
     }
 }
